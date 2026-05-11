@@ -1,8 +1,8 @@
 package main
 
 import (
-	// "fmt"
 	// "io"
+	"fmt"
 	"log"
 	// "net"
 	"net/http"
@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const port = ":6767"
+const PORT = 6767
 
 var upgrader = websocket.Upgrader{
     ReadBufferSize:  1024,
@@ -92,7 +92,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	address := fmt.Sprintf(":%d", PORT)
+
+    log.Println("server listening on", PORT)
+
     http.HandleFunc("/ws", wsHandler)
-    log.Println("server listening on", port)
-    log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(address, nil))
 }
