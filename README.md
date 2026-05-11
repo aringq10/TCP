@@ -1,16 +1,25 @@
-# TCP - The Chess Project
+# TCP — The Chess Project
 
-Currently using SFML 3.0.2
+A networked chess game client in C++ and remote server in Go.
+
+> **Stack:** SFML 3.0.2
 
 ## TP2 goals
 
-UI(GF) - Draw board with a single piece. Make the piece interactive, call logic and network modules on move.
-Chess logic(JK) - Create Board and Piece classes. Expose make_move and get_valid_moves method from Board to UI.
-Client Networking(AP) - Connect/disconnect to remote on app start/close, expose send_move method to UI.
-Server Networking(AP) - Expose protocol commands to client network module:
-```
-  MOVE SEND <a-h><1-8> <a-h><1-8>
-  MOVE RECEIVED <a-h><1-8> <a-h><1-8>
+| Module            | Owner | Responsibilities                                                                                       |
+| ----------------- | ----- | ------------------------------------------------------------------------------------------------------ |
+| UI                | GF    | Draw board with a single piece. Make the piece interactive; call logic and network modules on move.   |
+| Chess logic       | JK    | Create `Board` and `Piece` classes. Expose `make_move` and `get_valid_moves` from `Board` to the UI.  |
+| Client networking | AP    | Connect/disconnect to remote on app start/close; expose `send_move` to the UI.                         |
+| Server networking | AC    | Expose protocol commands to the client network module (see below).                                     |
+
+### Server protocol
+
+```text
+MOVE SEND     <a-h><1-8> <a-h><1-8>
+MOVE RECEIVED <a-h><1-8> <a-h><1-8>
 ```
 
-MIT License
+## License
+
+MIT License.
