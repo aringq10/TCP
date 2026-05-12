@@ -12,21 +12,13 @@ ChessNetwork::ChessNetwork()
 }
 
 ChessNetwork::~ChessNetwork() {
-  if (!is_connected_) {
-    return;
-  }
-
-  try {
-    websocket_.close(websocket::close_code::normal);
-  } catch (const std::exception&) {
-  }
+  disconnect();
 }
 
-bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port) {
+bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port, const EventHandler& handle) {
   try {
     if (is_connected_) {
-      websocket_.close(websocket::close_code::normal);
-      is_connected_ = false;
+      return true;
     }
 
     const auto endpoints = resolver_.resolve(ip_address, std::to_string(port));
@@ -38,9 +30,33 @@ bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port) {
     is_connected_ = true;
 
     std::cout << "Connected to WebSocket server at " << host_header << std::endl;
+
+    /*
+      while (true) {
+        data = websocket_.read(); // Read incomming messages from ws conn
+        Event e = { from data }   // Construct Event
+        handle(e);                // Call client-passed handler function
+      }
+    */
+
     return true;
   } catch (const std::exception& exception) {
     std::cerr << "WebSocket connection failed: " << exception.what() << std::endl;
     return false;
   }
+}
+
+void ChessNetwork::disconnect() {
+  if (!is_connected_) {
+    return;
+  }
+
+  try {
+    is_connected_ = false;
+    websocket_.close(websocket::close_code::normal);
+  } catch (const std::exception&) {
+  }
+}
+
+void ChessNetwork::send_move(const char from[2], const char to[2]) {
 }

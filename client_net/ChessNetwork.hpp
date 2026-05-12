@@ -10,13 +10,26 @@ namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 namespace net = boost::asio;
 
+enum MessageType {
+    MOVE_OK
+};
+
+struct Event {
+    MessageType type;
+    // ...
+};
+
+using EventHandler = std::function<void(Event)>;
+
 class ChessNetwork
 {
 public:
   ChessNetwork();
   ~ChessNetwork();
 
-  bool connect(const std::string& ip_address, std::uint16_t port);
+  bool connect(const std::string& ip_address, std::uint16_t port, const EventHandler& handle);
+  void send_move(const char from[2], const char to[2]);
+  void disconnect();
 
 private:
   using tcp = boost::asio::ip::tcp;
