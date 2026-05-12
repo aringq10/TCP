@@ -20,6 +20,8 @@ bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port, co
     if (is_connected_) {
       return true;
     }
+    Event e {OTHER};
+    handle(e);
 
     const auto endpoints = resolver_.resolve(ip_address, std::to_string(port));
     const auto endpoint = net::connect(websocket_.next_layer(), endpoints);
@@ -30,6 +32,13 @@ bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port, co
     is_connected_ = true;
 
     std::cout << "Connected to WebSocket server at " << host_header << std::endl;
+
+    handler_ = handle;
+    
+    receive_thread_ = std::thread([this]() {
+      receive_loop();
+    });
+
 
     /*
       while (true) {
@@ -59,4 +68,20 @@ void ChessNetwork::disconnect() {
 }
 
 void ChessNetwork::send_move(const char from[2], const char to[2]) {
+  websocket_.write(net::buffer(std::string(from, 2) + std::string(to, 2)));
+}
+
+void ChessNetwork::receive_loop() {
+  try {
+    while (is_connected_) {
+      beast::flat_buffer buffer;
+      websocket_.read(buffer);
+
+      std::string message = beast::buffers_to_string(buffer.data());
+
+      std::cout << "Received message: " << message << std::endl;
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Error in receive loop: " << e.what() << std::endl;
+  }
 }

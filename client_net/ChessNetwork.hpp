@@ -4,14 +4,18 @@
 #include <boost/beast/websocket.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <string>
+#include <thread>
+#include <atomic>
 
 namespace beast = boost::beast;
 namespace websocket = beast::websocket;
 namespace net = boost::asio;
 
 enum MessageType {
-    MOVE_OK
+    MOVE_OK,
+    OTHER
 };
 
 struct Event {
@@ -21,8 +25,7 @@ struct Event {
 
 using EventHandler = std::function<void(Event)>;
 
-class ChessNetwork
-{
+class ChessNetwork {
 public:
   ChessNetwork();
   ~ChessNetwork();
@@ -33,9 +36,13 @@ public:
 
 private:
   using tcp = boost::asio::ip::tcp;
+  void receive_loop();
 
   net::io_context io_context_;
   tcp::resolver resolver_;
   websocket::stream<tcp::socket> websocket_;
-  bool is_connected_;
+
+  std::atomic<bool> is_connected_;
+  std::thread receive_thread_;
+  EventHandler handler_;
 };
