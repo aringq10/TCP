@@ -14,13 +14,17 @@ namespace websocket = beast::websocket;
 namespace net = boost::asio;
 
 enum MessageType {
-    MOVE_OK,
+    OPPONENT_MOVE,
+    MOVE_ACCEPTED,
+    MOVE_REJECTED,
     OTHER
 };
 
 struct Event {
     MessageType type;
-    // ...
+    std::string received_message;
+    std::string from;
+    std::string to;
 };
 
 using EventHandler = std::function<void(Event)>;
@@ -31,16 +35,20 @@ public:
   ~ChessNetwork();
 
   bool connect(const std::string& ip_address, std::uint16_t port, const EventHandler& handle);
-  void send_move(const char from[2], const char to[2]);
+  bool send_move(const char from[2], const char to[2]);
   void disconnect();
 
 private:
   using tcp = boost::asio::ip::tcp;
+
   void receive_loop();
+  void parse_move(const std::string& message, Event& e);
+  bool has_pending_move() const;
 
   net::io_context io_context_;
   tcp::resolver resolver_;
   websocket::stream<tcp::socket> websocket_;
+  std::atomic<bool> pending_move_;
 
   std::atomic<bool> is_connected_;
   std::thread receive_thread_;
