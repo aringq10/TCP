@@ -8,7 +8,8 @@
 ChessNetwork::ChessNetwork()
   : resolver_(io_context_),
     websocket_(io_context_),
-    is_connected_(false) {
+    is_connected_(false),
+    pending_move_(false) {
 }
 
 ChessNetwork::~ChessNetwork() {
@@ -20,8 +21,8 @@ bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port, co
     if (is_connected_) {
       return true;
     }
-    Event e {OTHER};
-    handle(e);
+    // Event e {OTHER};
+    // handle(e);
 
     const auto endpoints = resolver_.resolve(ip_address, std::to_string(port));
     const auto endpoint = net::connect(websocket_.next_layer(), endpoints);
@@ -35,18 +36,9 @@ bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port, co
 
     handler_ = handle;
     
-    receive_thread_ = std::thread([this]() {
+    receive_thread_ = std::thread([this]()-> void {
       receive_loop();
     });
-
-
-    /*
-      while (true) {
-        data = websocket_.read(); // Read incomming messages from ws conn
-        Event e = { from data }   // Construct Event
-        handle(e);                // Call client-passed handler function
-      }
-    */
 
     return true;
   } catch (const std::exception& exception) {
@@ -61,14 +53,31 @@ void ChessNetwork::disconnect() {
   }
 
   try {
-    is_connected_ = false;
     websocket_.close(websocket::close_code::normal);
+    is_connected_ = false;
+    std::cout << "Disconnected successfully" << std::endl;
   } catch (const std::exception&) {
   }
 }
 
-void ChessNetwork::send_move(const char from[2], const char to[2]) {
-  websocket_.write(net::buffer(std::string(from, 2) + std::string(to, 2)));
+bool ChessNetwork::send_move(const char from[2], const char to[2]) {
+  if(!is_connected_ || has_pending_move() || from == nullptr || to == nullptr) {
+    return false;
+  }
+  
+  try {
+    pending_move_ = true;
+
+    std::string messageType = "MOVE";
+    std::string message = std::string(from, 2) + " " + std::string(to, 2);
+    websocket_.write(net::buffer(messageType + " " + message));
+
+    return true;
+  } catch (const std::exception& e) {
+    pending_move_ = false;
+    std::cerr << "Failed to send move: " << e.what() << std::endl;
+    return false;
+  }
 }
 
 void ChessNetwork::receive_loop() {
@@ -78,10 +87,51 @@ void ChessNetwork::receive_loop() {
       websocket_.read(buffer);
 
       std::string message = beast::buffers_to_string(buffer.data());
+      std::string parsed_message;
+      std::string messageType;
 
-      std::cout << "Received message: " << message << std::endl;
+      Event e;
+      MessageType type = OTHER;
+
+      if (message.length() >= 4) {
+        messageType = message.substr(0, 4);
+        parsed_message = "";
+
+        if (message.length() > 5) {
+          parsed_message = message.substr(5);
+        }
+
+        if (messageType == "MOVE") {
+          parse_move(parsed_message, e);
+          type = OPPONENT_MOVE;
+        } 
+        else if (messageType == "ACPT") {
+          type = MOVE_ACCEPTED;
+          pending_move_ = false;
+        }
+        else if (messageType == "RJCT") {
+          type = MOVE_REJECTED;
+          pending_move_ = false;
+        }
+      }
+    
+      e.type = type;
+      e.received_message = parsed_message;
+      handler_(e);
     }
   } catch (const std::exception& e) {
     std::cerr << "Error in receive loop: " << e.what() << std::endl;
   }
+}
+
+void ChessNetwork::parse_move(const std::string& message, Event& e) {
+  std::stringstream ss(message);
+  std::string from, to;
+  ss >> from >> to;
+  e.from = from;
+  e.to = to;
+}
+
+bool ChessNetwork::has_pending_move() const {
+  return pending_move_;
 }
