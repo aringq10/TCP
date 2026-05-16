@@ -62,8 +62,8 @@ void ChessNetwork::disconnect() {
   }
 }
 
-bool ChessNetwork::send_move(const char from[2], const char to[2]) {
-  if(!is_connected_ || has_pending_move() || from == nullptr || to == nullptr) {
+bool ChessNetwork::send_move(const std::string from, const std::string to) {
+  if(!is_connected_ || has_pending_move()) {
     return false;
   }
   
@@ -71,7 +71,8 @@ bool ChessNetwork::send_move(const char from[2], const char to[2]) {
     pending_move_ = true;
 
     std::string messageType = "MOVE";
-    std::string message = std::string(from, 2) + " " + std::string(to, 2);
+    std::string message = from.substr(0, 2) + " " + to.substr(0, 2);
+    std::cout << messageType << " " << message << std::endl;
     websocket_.write(net::buffer(messageType + " " + message));
 
     return true;

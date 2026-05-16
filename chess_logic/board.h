@@ -40,12 +40,12 @@ private:
     bool hasMoveToUndo;
     bool isInsideBoard(int x, int y);
     bool isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece);
-    bool isValidMove(int fromX, int fromY, int toX, int toY);
     bool parseCoordinate(std::string coord, int &x, int &y);
 
 public:
     Board();
 
+    bool isValidMove(int fromX, int fromY, int toX, int toY);
     bool makeMove(std::string from, std::string to);
     bool makeMove(int fromX, int fromY, int toX, int toY);
     bool makeOppMove(std::string from, std::string to);

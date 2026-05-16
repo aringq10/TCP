@@ -1,3 +1,4 @@
+#pragma once
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -38,7 +39,7 @@ public:
   ~ChessNetwork();
 
   bool connect(const std::string& ip_address, std::uint16_t port, const EventHandler& handle);
-  bool send_move(const char from[2], const char to[2]);
+  bool send_move(const std::string from, const std::string to);
   void disconnect();
 
 private:

@@ -1,10 +1,10 @@
 package match
 
 import (
-    "log"
+	"log"
 
-    "github.com/aringq10/TCP/server/conn"
-    "github.com/aringq10/TCP/server/chess"
+	"github.com/aringq10/TCP/server/chess"
+	"github.com/aringq10/TCP/server/conn"
 )
 
 const MAX_INVL = 5
@@ -17,6 +17,7 @@ type Player struct {
 type Match struct {
     Board *chess.Board
     Players []Player
+    WhoseTurn chess.Color
 }
 
 func (m *Match) SendColors() {
@@ -28,6 +29,14 @@ func (m *Match) SendColors() {
 func (m *Match) End() {
     for _, p := range m.Players {
         p.Conn.Close("End Of Match")
+    }
+}
+
+func (m *Match) NextTurn() {
+    if m.WhoseTurn == chess.WHITE {
+        m.WhoseTurn = chess.BLACK
+    } else {
+        m.WhoseTurn = chess.WHITE
     }
 }
 
@@ -53,7 +62,8 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
         from := string(data[5:7])
         to := string(data[8:10])
 
-        if m.Board.MakeMove(p.Color, from, to) {
+        if p.Color == m.WhoseTurn && m.Board.MakeMove(p.Color, from, to) {
+            m.NextTurn()
             p.Conn.WriteString("ACPT")
             for _, v := range m.Players {
                 if v != *p {
@@ -78,6 +88,7 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
     var m Match
 
     m.Board = chess.NewBoard()
+    m.WhoseTurn = chess.WHITE
 
     m.Players = []Player{
         {connWhite, chess.WHITE},

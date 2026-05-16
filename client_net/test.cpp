@@ -12,7 +12,7 @@ Board board;
 int main() {
   ChessNetwork chess_network;
 
-  if (chess_network.connect("193.219.91.103", 6767, handle_event)) {
+  if (chess_network.connect("aringas.dev", 6767, handle_event)) {
     std::cout << "Test connection succeeded" << std::endl;
   } else{
     std::cout << "Test connection failed" << std::endl;
