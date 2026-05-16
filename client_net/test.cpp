@@ -17,17 +17,15 @@ int main() {
   } else{
     std::cout << "Test connection failed" << std::endl;
   }
-  // draw_board(board);
+  std::string input;
+  draw_board(board);
+  while(std::cin >> input && input == "g") {
+    if (chess_network.send_move("a5", "a6")) {
+      board.makeMove("a5", "a6");
+      draw_board(board);
+    }
+  }
 
-  // // test sent_move
-  // if(board.makeMove("a5", "a6")) {
-  //   draw_board(board);
-  //   chess_network.send_move("a5", "a6");
-  // }
-
-  // if (!chess_network.send_move("a6", "a7")) {
-  //   std::cout << "Failed to send move" << std::endl;
-  // }
   std::cin >> std::ws; // Wait before exiting
   chess_network.disconnect();
   return 0;
