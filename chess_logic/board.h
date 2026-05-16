@@ -19,9 +19,15 @@ enum Piece {
     BLACK_KING = 12
 };
 
+enum Color {
+    WHITE,
+    BLACK
+};
+
 class Board {
 private:
     Piece board[8][8];
+    Color myColor;
     bool isInsideBoard(int x, int y);
     bool isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece);
     bool isValidMove(int fromX, int fromY, int toX, int toY);
@@ -32,5 +38,6 @@ public:
 
     bool makeMove(std::string from, std::string to);
     bool makeMove(int fromX, int fromY, int toX, int toY);
+    void setColor(Color c);
     const Piece (&getBoard() const)[8][8];
 };

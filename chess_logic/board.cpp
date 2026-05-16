@@ -1,4 +1,4 @@
-#include "Board.h"
+#include "board.h"
 #include <string>
 
 Board::Board() {
@@ -97,6 +97,9 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY){
             board[toY][toX]=board[fromY][fromX];
             board[fromY][fromX]=EMPTY;
             return true;
+}
+void Board::setColor(Color c) {
+    myColor = c;
 }
 const Piece (&Board::getBoard() const)[8][8] { //getteris
     return board;
