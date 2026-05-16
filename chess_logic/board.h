@@ -19,7 +19,7 @@ enum Piece {
     BLACK_KING = 12
 };
 
-enum Color {
+enum class Color {
     WHITE,
     BLACK
 };
