@@ -28,6 +28,16 @@ class Board {
 private:
     Piece board[8][8];
     Color myColor;
+
+    int lastFromX;
+    int lastFromY;
+    int lastToX;
+    int lastToY;
+
+    Piece movedPiece;
+    Piece capturedPiece;
+
+    bool hasMoveToUndo;
     bool isInsideBoard(int x, int y);
     bool isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece);
     bool isValidMove(int fromX, int fromY, int toX, int toY);
@@ -41,5 +51,6 @@ public:
     bool makeOppMove(std::string from, std::string to);
     bool makeOppMove(int fromX, int fromY, int toX, int toY);
     void setColor(Color c);
+    bool undoLastMove();
     const Piece (&getBoard() const)[8][8];
 };

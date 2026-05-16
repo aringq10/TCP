@@ -16,6 +16,7 @@ Board::Board() {
     for(int y = 0; y < 8; y++)
         for(int x = 0; x < 8; x++)
             board[y][x] = startingBoard[y][x];
+    
 }
 
 bool Board::isInsideBoard(int x, int y) {
@@ -102,6 +103,16 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
     if(!isValidMove(fromX, fromY, toX, toY)){
         return false;
     }
+
+    movedPiece = board[fromY][fromX];
+    capturedPiece = board[toY][toX];
+
+    lastFromX = fromX;
+    lastFromY = fromY;
+    lastToX = toX;
+    lastToY = toY;
+    hasMoveToUndo = true;
+
     board[toY][toX]=board[fromY][fromX];
     board[fromY][fromX]=EMPTY;
     return true;
@@ -126,6 +137,17 @@ bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
 
 void Board::setColor(Color c) {
     myColor = c;
+}
+bool Board::undoLastMove() {
+    if(!hasMoveToUndo)
+        return false;
+
+    board[lastFromY][lastFromX] = movedPiece;
+    board[lastToY][lastToX] = capturedPiece;
+
+    hasMoveToUndo = false;
+
+    return true;
 }
 
 const Piece (&Board::getBoard() const)[8][8] {
