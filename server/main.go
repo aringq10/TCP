@@ -49,6 +49,7 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
     var data []byte
     var ok bool
     var matchOnGoing bool = true
+	var whiteMove bool = true
 
     for matchOnGoing {
         select {
@@ -69,9 +70,10 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
                 }
                 from := data[5:7]
                 to := data[8:10]
-                fmt.Println("WHITE MOVED", from, to)
 
-                if isMoveValid() {
+                if isMoveValid() && whiteMove {
+					whiteMove = false
+					fmt.Println("WHITE MOVED", from, to)
                     connWhite.WriteMessage(websocket.TextMessage, []byte("ACPT"))
                     connBlack.WriteMessage(websocket.TextMessage, data[:10])
                 } else {
@@ -97,9 +99,10 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
                 }
                 from := data[5:7]
                 to := data[8:10]
-                fmt.Println("BLACK MOVED", from, to)
                 
-                if isMoveValid() {
+                if isMoveValid() && !whiteMove {
+					whiteMove = true
+					fmt.Println("BLACK MOVED", from, to)
                     connBlack.WriteMessage(websocket.TextMessage, []byte("ACPT"))
                     connWhite.WriteMessage(websocket.TextMessage, data[:10])
                 } else {
