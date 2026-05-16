@@ -2,7 +2,7 @@
 
 A networked chess game client in C++ and remote server in Go.
 
-> **Stack:** SFML 3.0.2
+> **Stack:** SFML 3.0.2 Golang ASIO/Boost
 
 ## TP2 goals
 
