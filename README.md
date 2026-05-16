@@ -11,7 +11,7 @@ A networked chess game client in C++ and remote server in Go.
 | UI                | GF    | Draw board with a single piece. Make the piece interactive; call logic and network modules on move.  |
 | Chess logic       | JK    | Create `Board` class. Expose `makeMove` and `makeOppMove` from `Board` to the UI.                    |
 | Client networking | AP    | Expose `send_move`, `connect` and `disconnect` to the UI.                                            |
-| Server networking | AC    | Expose protocol commands to the client network module (see below).                                   |
+| Server networking | AC    | Expose protocol commands to the client network module (see below), server side move validation.      |
 
 ### Server protocol
 
