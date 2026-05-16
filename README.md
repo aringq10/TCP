@@ -6,12 +6,31 @@ A networked chess game client in C++ and remote server in Go.
 
 ## TP2 goals
 
-| Module            | Owner | Responsibilities                                                                                     |
-| ----------------- | ----- | ---------------------------------------------------------------------------------------------------- |
-| UI                | GF    | Draw board with a single piece. Make the piece interactive; call logic and network modules on move.  |
-| Chess logic       | JK    | Create `Board` class. Expose `makeMove` and `makeOppMove` from `Board` to the UI.                    |
-| Client networking | AP    | Expose `send_move`, `connect` and `disconnect` to the UI.                                            |
-| Server networking | AC    | Expose protocol commands to the client network module (see below), server side move validation.      |
+| Module            | Owner | Responsibilities                          |
+| ----------------- | ----- | ----------------------------------------- |
+| UI                | GF    | Draw board with a single piece. Make the  |
+|                   |       | piece interactive; call logic and network |
+|                   |       | modules on move.                          |
+| Chess logic       | JK    | Create `Board` class. Expose `makeMove`   |
+|                   |       | and `makeOppMove` from `Board` to the UI. |
+| Client networking | AP    | Expose `send_move`, `connect` and         |
+|                   |       | `disconnect` to the UI.                   |
+| Server networking | AC    | Expose protocol commands to the client    |
+|                   |       | network module (see below), server side   |
+|                   |       | move validation.                          |
+
+## TP3 goals
+
+| Module            | Owner  | Responsibilities                          |
+| ----------------- | ------ | ----------------------------------------- |
+| UI                | GF     | Pieces represented by PNGs. Main menu.    |
+|                   |        | Buttons for Resign/Leave, Join Queue etc. |
+| Chess logic       | JK     | Create a `Piece` class instead of enums.  |
+|                   |        | Add movement logic for all other          |
+|                   |        | classical chess pieces.                   |
+| Client&Server     | AP, AC | Come up with remaining protocol messages. |
+| Networking        |        | Implement in code.                        |
+
 
 ### Server protocol
 
@@ -31,9 +50,11 @@ A networked chess game client in C++ and remote server in Go.
 | Direction         | Message                     |
 |-------------------|-----------------------------|
 | Client → Server   | `MOVE <from> <to>`          |
-| Server → Client   | `MOVE ACCEPTED`             |
-| Server → Client   | `MOVE REJECTED`             |
-| Server → Opponent | `OPPONENT_MOVE <from> <to>` |
+| Server → Client   | `ACPT`                      |
+| Server → Client   | `RJCT`                      |
+| Server → Opponent | `MOVE <from> <to>`          |
+
+> Will be expanded in the course of TP3.
 
 ## License
 
