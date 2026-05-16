@@ -25,8 +25,17 @@ bool Board::isInsideBoard(int x, int y) {
 }
 
 bool Board::isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece) {
-    if(fromX != toX)
+    Piece targetPiece = board[toY][toX];
+
+    if (piece == EMPTY) {
         return false;
+    }
+    if (piece > 6 && targetPiece > 6) {
+        return false;
+    }
+    if (piece < 7 && targetPiece < 7 && targetPiece != EMPTY) {
+        return false;
+    }
 
     int dir = 0;
     int startRow = 0;
@@ -40,14 +49,19 @@ bool Board::isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece)
         startRow = 1;
     }
 
-    if(board[toY][toX] != EMPTY)
+    int diffY = toY - fromY;
+    int diffX = toX - fromX;
+
+    if(board[toY][toX] != EMPTY) {
+        if ((diffX == -1 || diffX == 1) && diffY == dir) {
+            return true;
+        }
         return false;
+    }
 
-    int diff = toY - fromY;
+    if(diffY == dir && diffX == 0) return true;
 
-    if(diff == dir) return true;
-
-    if(fromY == startRow && diff == 2 * dir) {
+    if(fromY == startRow && diffY == 2 * dir && diffX == 0) {
         int midY = fromY + dir;
 
         if(board[midY][fromX] == EMPTY)

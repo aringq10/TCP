@@ -5,7 +5,6 @@
 #include "../chess_logic/board.h"
 #include "../client_net/ChessNetwork.hpp"
 
-
 Board board;
 ChessNetwork network;
 
@@ -23,7 +22,9 @@ void handle_event(Event e) {
       break;
 
     case MOVE_REJECTED:
+      board.undoLastMove();
       std::cout << "MOVE REJECTED" << std::endl;
+      std::cout << "MOVE REVERTED LOCALLY" << std::endl;
       break;
 
     case INVALID:
