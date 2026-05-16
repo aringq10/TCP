@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+    "fmt"
+    "log"
+    "net/http"
 
-	"github.com/gorilla/websocket"
-	"github.com/aringq10/TCP/server/conn"
+    "github.com/gorilla/websocket"
+    "github.com/aringq10/TCP/server/conn"
 )
 
 const PORT  = 6767
@@ -19,15 +19,12 @@ func isMoveValid() bool {
 func connToChan(c *websocket.Conn, ch chan []byte) {
     for {
         _, data, err := c.ReadMessage()
-
         if err != nil {
             fmt.Println("reading error:", err)
             break
         }
-
         ch <- data
     }
-
     close(ch)
 }
 
@@ -37,6 +34,9 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
 
     defer conn.CloseConn(connWhite, "twas good playing")
     defer conn.CloseConn(connBlack, "twas good playing")
+
+    connWhite.WriteMessage(websocket.TextMessage, []byte("WHTE"))
+    connBlack.WriteMessage(websocket.TextMessage, []byte("BLCK"))
 
     fmt.Println("Match started between", connWhite.RemoteAddr(), "with", connBlack.RemoteAddr())
 
@@ -49,7 +49,7 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
     var data []byte
     var ok bool
     var matchOnGoing bool = true
-	var whiteMove bool = true
+    var whiteMove bool = true
 
     for matchOnGoing {
         select {
@@ -72,8 +72,8 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
                 to := data[8:10]
 
                 if isMoveValid() && whiteMove {
-					whiteMove = false
-					fmt.Println("WHITE MOVED", from, to)
+                    whiteMove = false
+                    fmt.Println("WHITE MOVED", from, to)
                     connWhite.WriteMessage(websocket.TextMessage, []byte("ACPT"))
                     connBlack.WriteMessage(websocket.TextMessage, data[:10])
                 } else {
@@ -101,8 +101,8 @@ func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
                 to := data[8:10]
                 
                 if isMoveValid() && !whiteMove {
-					whiteMove = true
-					fmt.Println("BLACK MOVED", from, to)
+                    whiteMove = true
+                    fmt.Println("BLACK MOVED", from, to)
                     connBlack.WriteMessage(websocket.TextMessage, []byte("ACPT"))
                     connWhite.WriteMessage(websocket.TextMessage, data[:10])
                 } else {
@@ -132,7 +132,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	address := fmt.Sprintf(":%d", PORT)
+    address := fmt.Sprintf(":%d", PORT)
 
     log.Println("server listening on", PORT)
 
