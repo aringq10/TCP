@@ -95,10 +95,6 @@ void ChessNetwork::receive_loop() {
 
       std::cout << "Received message from server: " << message << std::endl;
 
-      // temp remove later
-      pending_move_ = false;
-      // temp remove later
-
       if (message.length() >= 4) {
         messageType = message.substr(0, 4);
         parsed_message = "";

@@ -17,12 +17,13 @@ int main() {
   } else{
     std::cout << "Test connection failed" << std::endl;
   }
-  std::string input;
+  std::string from, to;
   draw_board(board);
-  while(std::cin >> input && input == "g") {
-    if (chess_network.send_move("a5", "a6")) {
-      board.makeMove("a5", "a6");
-      draw_board(board);
+  while(std::cin >> from >> to) {
+    if (chess_network.send_move(from.c_str(), to.c_str())) {
+      board.makeMove(from, to);
+    } else {
+      std::cout << "Failed to send move" << std::endl;
     }
   }
 
@@ -76,12 +77,13 @@ void handle_event(Event e) {
   switch (e.type) {
     case OPPONENT_MOVE:
       std::cout << "Opponent move event received" << std::endl;
-      std::cout << e.type <<  " " << e.received_message << std::endl;
+      std::cout << e.received_message << std::endl;
       board.makeMove(e.from, e.to);
       break;
 
     case MOVE_ACCEPTED:
       std::cout << "Move accepted" << std::endl;
+      draw_board(board);
       break;
 
     case MOVE_REJECTED:
