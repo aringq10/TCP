@@ -21,7 +21,7 @@ int main() {
   draw_board(board);
   while(std::cin >> from >> to) {
     if (chess_network.send_move(from.c_str(), to.c_str())) {
-      board.makeMove(from, to);
+      std::cout << "Move sent" << std::endl;
     } else {
       std::cout << "Failed to send move" << std::endl;
     }
@@ -79,6 +79,7 @@ void handle_event(Event e) {
       std::cout << "Opponent move event received" << std::endl;
       std::cout << e.received_message << std::endl;
       board.makeMove(e.from, e.to);
+      draw_board(board);
       break;
 
     case MOVE_ACCEPTED:
