@@ -1,149 +1,130 @@
 package main
 
 import (
-	// "io"
-	"errors"
 	"fmt"
 	"log"
-	"slices"
-	"sync"
-
-	// "net"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/aringq10/TCP/server/conn"
 )
 
 const PORT  = 6767
 const MOUNT = "/ws"
-const WS_READ_LIMIT = 64
-var conns connPool
 
-type connPool struct {
-    conns []*websocket.Conn
-    mu    sync.Mutex
+func isMoveValid() bool {
+    return true
 }
 
-func (p *connPool) addConn(c *websocket.Conn) {
-    p.conns = append(p.conns, c)
-}
+func connToChan(c *websocket.Conn, ch chan []byte) {
+    for {
+        _, data, err := c.ReadMessage()
 
-func (p *connPool) removeConn(c *websocket.Conn) {
-    if i := slices.Index(p.conns, c); i >= 0 {
-        p.conns[i] = p.conns[len(p.conns) - 1]
-        p.conns = p.conns[:len(p.conns) - 1]
-    }
-}
+        if err != nil {
+            fmt.Println("reading error:", err)
+            break
+        }
 
-func (p *connPool) count() int {
-    return len(p.conns)
-}
-
-var upgrader = websocket.Upgrader{
-    ReadBufferSize:  1024,
-    WriteBufferSize: 1024,
-    CheckOrigin: func(r *http.Request) bool {
-        return true // allow all origins in dev; tighten in prod
-    },
-}
-
-// func connToChan(c net.Conn, ch chan []byte) {
-//     b := make([]byte, 1024)
-//     for {
-//         n, err := c.Read(b)
-//         if err == io.EOF {
-//             break
-//         }
-//         if err != nil {
-//             fmt.Println("reading error:", err)
-//             continue
-//         }
-//
-//         out := make([]byte, n)
-//         copy(out, b)
-//
-//         ch <- out
-//     }
-// }
-//
-// func handleMatch(connWhite net.Conn, connBlack net.Conn) {
-//     defer connWhite.Close()
-//     defer connBlack.Close()
-//
-//     fmt.Println("Connecting", connWhite.RemoteAddr(), "with", connBlack.RemoteAddr())
-//
-//     chWhite := make(chan []byte)
-//     chBlack := make(chan []byte)
-//
-//     go connToChan(connWhite, chWhite)
-//     go connToChan(connBlack, chBlack)
-//
-//     fmt.Println("Starting echo loop for match")
-//     var data []byte
-//     for {
-//         select {
-//         case data = <-chWhite:
-//             fmt.Println("Received data from chWhite:", data)
-//             connBlack.Write(data)
-//         case data = <-chBlack:
-//             fmt.Println("Received data from chBlack:", data)
-//             connWhite.Write(data)
-//         }
-//     }
-// }
-
-func setupConn(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
-    c, err := upgrader.Upgrade(w, r, nil)
-    if err != nil {
-        return nil, errors.New("upgrade failed:" + err.Error())
+        ch <- data
     }
 
-    if conns.count() > 0 {
-        closeConn(c, "queue is full")
-        return nil, errors.New("connection ended: queues is full")
-    }
-
-    c.SetReadLimit(WS_READ_LIMIT)
-
-    conns.addConn(c)
-
-    return c, nil
+    close(ch)
 }
 
-func closeConn(c * websocket.Conn, reason string) {
-    c.WriteMessage(
-        websocket.CloseMessage,
-        websocket.FormatCloseMessage(websocket.CloseNormalClosure, reason),
-    )
-    c.Close()
-    conns.removeConn(c)
+func handleMatch(connWhite *websocket.Conn, connBlack *websocket.Conn) {
+    conn.Conns.RemoveConn(connWhite)
+    conn.Conns.RemoveConn(connBlack)
+
+    defer conn.CloseConn(connWhite, "twas good playing")
+    defer conn.CloseConn(connBlack, "twas good playing")
+
+    fmt.Println("Match started between", connWhite.RemoteAddr(), "with", connBlack.RemoteAddr())
+
+    chWhite := make(chan []byte)
+    chBlack := make(chan []byte)
+
+    go connToChan(connWhite, chWhite)
+    go connToChan(connBlack, chBlack)
+
+    var data []byte
+    var ok bool
+    var matchOnGoing bool = true
+
+    for matchOnGoing {
+        select {
+        case data, ok = <-chWhite:
+            if !ok {
+                matchOnGoing = false
+                break
+            }
+            if len(data) < 4 {
+                connWhite.WriteMessage(websocket.TextMessage, []byte("INVL"))
+                continue
+            }
+            switch string(data[:4]) {
+            case "MOVE":
+                if len(data) < 10 {
+                    connWhite.WriteMessage(websocket.TextMessage, []byte("INVL"))
+                    continue
+                }
+                from := data[5:7]
+                to := data[8:10]
+                fmt.Println("WHITE MOVED", from, to)
+
+                if isMoveValid() {
+                    connWhite.WriteMessage(websocket.TextMessage, []byte("ACPT"))
+                    connBlack.WriteMessage(websocket.TextMessage, data[:10])
+                } else {
+                    connWhite.WriteMessage(websocket.TextMessage, []byte("RJCT"))
+                }
+            default:
+                connWhite.WriteMessage(websocket.TextMessage, []byte("INVL"))
+            }
+        case data, ok = <-chBlack:
+            if !ok {
+                matchOnGoing = false
+                break
+            }
+            if len(data) < 4 {
+                connBlack.WriteMessage(websocket.TextMessage, []byte("INVL"))
+                continue
+            }
+            switch string(data[:4]) {
+            case "MOVE":
+                if len(data) < 10 {
+                    connBlack.WriteMessage(websocket.TextMessage, []byte("INVL"))
+                    continue
+                }
+                from := data[5:7]
+                to := data[8:10]
+                fmt.Println("BLACK MOVED", from, to)
+                
+                if isMoveValid() {
+                    connBlack.WriteMessage(websocket.TextMessage, []byte("ACPT"))
+                    connWhite.WriteMessage(websocket.TextMessage, data[:10])
+                } else {
+                    connBlack.WriteMessage(websocket.TextMessage, []byte("RJCT"))
+                }
+            default:
+                connBlack.WriteMessage(websocket.TextMessage, []byte("INVL"))
+            }
+        }
+    }
+
+    fmt.Println("Match ended between", connWhite.RemoteAddr(), "with", connBlack.RemoteAddr())
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
     log.Println("ws connection from", r.RemoteAddr)
 
-    c, err := setupConn(w, r)
+    err := conn.SetupConn(w, r)
     if err != nil {
         log.Println(err)
+        return
     }
 
-    defer closeConn(c, "twas good playing")
-
-    for {
-        messageType, p, err := c.ReadMessage()
-        if err != nil {
-            if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
-                break
-            }
-
-            log.Println("read error:", err)
-            break
-        }
-
-        if err := c.WriteMessage(messageType, p); err != nil {
-            log.Println("write error:", err)
-            break
-        }
+    if conn.Conns.Count() >= 2 {
+        go handleMatch(conn.Conns.Get(0), conn.Conns.Get(1))
     }
 }
 
