@@ -1,6 +1,9 @@
 #include "board.h"
 #include <string>
 
+// OPPONENT_MOVE
+// makeMove(opponent's move)
+
 Board::Board() {
     Piece startingBoard[8][8] = {
         {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -62,6 +65,9 @@ bool Board::isValidMove(int fromX, int fromY, int toX, int toY){
 
         Piece piece = board[fromY][fromX];
 
+        if (piece == EMPTY || (myColor == WHITE && piece > 6) || (myColor == BLACK && piece < 7)) {
+            return false;
+        }
         if(piece == WHITE_PAWN || piece == BLACK_PAWN){
         return isValidPawnMove(fromX, fromY, toX, toY, piece);
         }
@@ -94,6 +100,20 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY){
             if(!isValidMove(fromX, fromY, toX, toY)){
                 return false;
             }
+            board[toY][toX]=board[fromY][fromX];
+            board[fromY][fromX]=EMPTY;
+            return true;
+}
+bool Board::makeOppMove(std::string from, std::string to) {
+        int fromX, fromY;
+        int toX, toY;
+
+        if(!parseCoordinate(from, fromX, fromY)) return false;
+
+        if(!parseCoordinate(to, toX, toY)) return false;
+        return makeOppMove(fromX, fromY, toX, toY);
+}
+bool Board::makeOppMove(int fromX, int fromY, int toX, int toY){
             board[toY][toX]=board[fromY][fromX];
             board[fromY][fromX]=EMPTY;
             return true;

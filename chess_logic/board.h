@@ -38,6 +38,8 @@ public:
 
     bool makeMove(std::string from, std::string to);
     bool makeMove(int fromX, int fromY, int toX, int toY);
+    bool makeOppMove(std::string from, std::string to);
+    bool makeOppMove(int fromX, int fromY, int toX, int toY);
     void setColor(Color c);
     const Piece (&getBoard() const)[8][8];
 };
