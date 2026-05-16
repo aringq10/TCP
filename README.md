@@ -9,22 +9,31 @@ A networked chess game client in C++ and remote server in Go.
 | Module            | Owner | Responsibilities                                                                                     |
 | ----------------- | ----- | ---------------------------------------------------------------------------------------------------- |
 | UI                | GF    | Draw board with a single piece. Make the piece interactive; call logic and network modules on move.  |
-| Chess logic       | JK    | Create `Board` and `Piece` classes. Expose `make_move` and `get_valid_moves` from `Board` to the UI. |
-| Client networking | AP    | Connect/disconnect to remote on app start/close; expose `send_move` to the UI.                       |
+| Chess logic       | JK    | Create `Board` class. Expose `makeMove` and `makeOppMove` from `Board` to the UI.                    |
+| Client networking | AP    | Expose `send_move`, `connect` and `disconnect` to the UI.                                            |
 | Server networking | AC    | Expose protocol commands to the client network module (see below).                                   |
 
 ### Server protocol
 
-- **Game State** — the state the game is in.
-- **Client sends** — messages the client is allowed to send while in that state.
-- **Server responds** — possible server replies to the corresponding client message.
+- **Game State (the table title)** — the state the game is in.
+- **Direction** — who sends the message to whom.
+- **Message** — the wire format of the message.
 
-| Game State | Direction         | Message                     |
-|------------|-------------------|-----------------------------|
-| `IN GAME`  | Client → Server   | `MOVE <from> <to>`          |
-| `IN GAME`  | Server → Client   | `MOVE ACCEPTED`             |
-| `IN GAME`  | Server → Client   | `MOVE REJECTED`             |
-| `IN GAME`  | Server → Opponent | `OPPONENT_MOVE <from> <to>` |
+**`PREGAME`**
+
+| Direction         | Message |
+|-------------------|---------|
+| Server → Opponent | `WHTE`  |
+| Server → Opponent | `BLCK`  |
+
+**`IN GAME`**
+
+| Direction         | Message                     |
+|-------------------|-----------------------------|
+| Client → Server   | `MOVE <from> <to>`          |
+| Server → Client   | `MOVE ACCEPTED`             |
+| Server → Client   | `MOVE REJECTED`             |
+| Server → Opponent | `OPPONENT_MOVE <from> <to>` |
 
 ## License
 
