@@ -13,6 +13,8 @@ Board::Board() {
         {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY}
     };
 
+    whoseTurn = Color::WHITE;
+
     for(int y = 0; y < 8; y++)
         for(int x = 0; x < 8; x++)
             board[y][x] = startingBoard[y][x];
@@ -71,6 +73,10 @@ bool Board::isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece)
 }
 
 bool Board::isValidMove(int fromX, int fromY, int toX, int toY) {
+    if (myColor != whoseTurn) {
+        return false;
+    }
+
     if(!isInsideBoard(fromX, fromY)||!isInsideBoard(toX, toY)) {
         return false;
     }
@@ -118,6 +124,8 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
         return false;
     }
 
+    whoseTurn = myColor == Color::WHITE ? Color::BLACK : Color::WHITE;
+
     movedPiece = board[fromY][fromX];
     capturedPiece = board[toY][toX];
 
@@ -136,6 +144,8 @@ bool Board::makeOppMove(std::string from, std::string to) {
     int fromX, fromY;
     int toX, toY;
 
+    whoseTurn = myColor;
+
     if(!parseCoordinate(from, fromX, fromY)) return false;
 
     if(!parseCoordinate(to, toX, toY)) return false;
@@ -144,6 +154,7 @@ bool Board::makeOppMove(std::string from, std::string to) {
 }
 
 bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
+
     board[toY][toX]=board[fromY][fromX];
     board[fromY][fromX]=EMPTY;
     return true;
@@ -152,6 +163,7 @@ bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
 void Board::setColor(Color c) {
     myColor = c;
 }
+
 bool Board::undoLastMove() {
     if(!hasMoveToUndo)
         return false;

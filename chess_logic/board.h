@@ -28,6 +28,7 @@ class Board {
 private:
     Piece board[8][8];
     Color myColor;
+    Color whoseTurn;
 
     int lastFromX;
     int lastFromY;
