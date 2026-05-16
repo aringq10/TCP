@@ -1,5 +1,5 @@
 #include "ChessNetwork.hpp"
-#include "../chess_logic/Board.h"
+#include "../chess_logic/board.h"
 
 #include <iostream>
 
@@ -88,6 +88,9 @@ void handle_event(Event e) {
       std::cout << "MOVE REJECTED" << std::endl;
       break;
 
+    case INVALID:
+      std::cout << "INVALID MOVE" << std::endl;
+      break;
     // Handle other event types...
     default:
       std::cout << "Unknown event type received" << std::endl;

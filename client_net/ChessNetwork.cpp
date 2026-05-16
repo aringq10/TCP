@@ -93,13 +93,12 @@ void ChessNetwork::receive_loop() {
       Event e;
       MessageType type = OTHER;
 
-<<<<<<< HEAD
+      std::cout << "Received message from server: " << message << std::endl;
+
       // temp remove later
       pending_move_ = false;
       // temp remove later
 
-=======
->>>>>>> 9683e4e5caaf0c22d59f661d3363a8bc7111574e
       if (message.length() >= 4) {
         messageType = message.substr(0, 4);
         parsed_message = "";
@@ -118,6 +117,10 @@ void ChessNetwork::receive_loop() {
         }
         else if (messageType == "RJCT") {
           type = MOVE_REJECTED;
+          pending_move_ = false;
+        }
+        else if (messageType == "INVL") {
+          type = INVALID;
           pending_move_ = false;
         }
       }

@@ -17,6 +17,7 @@ enum MessageType {
     OPPONENT_MOVE,
     MOVE_ACCEPTED,
     MOVE_REJECTED,
+    INVALID,
     OTHER
 };
 
