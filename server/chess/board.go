@@ -5,8 +5,8 @@ type Board [8][8]Piece
 func NewBoard() *Board {
     var b Board
     for col := 0; col < 8; col++ {
-        b[1][col] = &Pawn{basePiece{color: WHITE}}
-        b[6][col] = &Pawn{basePiece{color: BLACK}}
+        b[1][col] = &Pawn{basePiece{Clr: WHITE}}
+        b[6][col] = &Pawn{basePiece{Clr: BLACK}}
     }
     return &b
 }
