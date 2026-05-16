@@ -93,10 +93,13 @@ void ChessNetwork::receive_loop() {
       Event e;
       MessageType type = OTHER;
 
+<<<<<<< HEAD
       // temp remove later
       pending_move_ = false;
       // temp remove later
 
+=======
+>>>>>>> 9683e4e5caaf0c22d59f661d3363a8bc7111574e
       if (message.length() >= 4) {
         messageType = message.substr(0, 4);
         parsed_message = "";

@@ -1,5 +1,5 @@
 #include "ChessNetwork.hpp"
-#include "Board.h"
+#include "../chess_logic/Board.h"
 
 #include <iostream>
 
