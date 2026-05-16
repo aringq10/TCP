@@ -19,10 +19,12 @@ A networked chess game client in C++ and remote server in Go.
 - **Client sends** — messages the client is allowed to send while in that state.
 - **Server responds** — possible server replies to the corresponding client message.
 
-| Game State | Client sends                      | Server responds                  |
-| ---------- | --------------------------------- | -------------------------------- |
-| `IN GAME`  | `MOVE SEND <a-h><1-8> <a-h><1-8>` | `MOVE OK  <a-h><1-8> <a-h><1-8>` |
-|            |                                   | `MOVE BAD <a-h><1-8> <a-h><1-8>` |
+| Game State | Direction         | Message                     |
+|------------|-------------------|-----------------------------|
+| `IN GAME`  | Client → Server   | `MOVE <from> <to>`          |
+| `IN GAME`  | Server → Client   | `MOVE ACCEPTED`             |
+| `IN GAME`  | Server → Client   | `MOVE REJECTED`             |
+| `IN GAME`  | Server → Opponent | `OPPONENT_MOVE <from> <to>` |
 
 ## License
 
