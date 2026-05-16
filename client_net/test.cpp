@@ -20,7 +20,8 @@ int main() {
   std::string from, to;
   draw_board(board);
   while(std::cin >> from >> to) {
-    if (chess_network.send_move(from.c_str(), to.c_str())) {
+    bool valid = board.makeMove(from, to);
+    if (valid && chess_network.send_move(from.c_str(), to.c_str())) {
       std::cout << "Move sent" << std::endl;
     } else {
       std::cout << "Failed to send move" << std::endl;
@@ -78,7 +79,7 @@ void handle_event(Event e) {
     case OPPONENT_MOVE:
       std::cout << "Opponent move event received" << std::endl;
       std::cout << e.received_message << std::endl;
-      board.makeMove(e.from, e.to);
+      board.makeOppMove(e.from, e.to);
       draw_board(board);
       break;
 
@@ -94,6 +95,17 @@ void handle_event(Event e) {
     case INVALID:
       std::cout << "INVALID MOVE" << std::endl;
       break;
+
+    case WHITE:
+      std::cout << "You are playing as WHITE" << std::endl;
+      board.setColor(Color::WHITE);
+      break;
+
+    case BLACK:
+      std::cout << "You are playing as BLACK" << std::endl;
+      board.setColor(Color::BLACK);
+      break;
+
     // Handle other event types...
     default:
       std::cout << "Unknown event type received" << std::endl;

@@ -18,6 +18,8 @@ enum MessageType {
     MOVE_ACCEPTED,
     MOVE_REJECTED,
     INVALID,
+    WHITE,
+    BLACK,
     OTHER
 };
 

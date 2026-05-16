@@ -34,6 +34,8 @@ bool ChessNetwork::connect(const std::string& ip_address, std::uint16_t port, co
 
     std::cout << "Connected to WebSocket server at " << host_header << std::endl;
 
+    
+
     handler_ = handle;
     
     receive_thread_ = std::thread([this]()-> void {
@@ -118,6 +120,12 @@ void ChessNetwork::receive_loop() {
         else if (messageType == "INVL") {
           type = INVALID;
           pending_move_ = false;
+        }
+        else if (messageType == "WHTE") {
+          type = WHITE;
+        }
+        else if (messageType == "BLCK") {
+          type = BLACK;
         }
       }
     
