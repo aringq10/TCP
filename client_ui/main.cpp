@@ -70,22 +70,17 @@ int main(int argc, char **argv) {
     }
 
     while (window.isOpen()) {
-        // 1. Handle UI Clicks (Your Local Moves)
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
+            if (const auto* resized = event->getIf < sf::Event::Resized>()) {
+                sf::FloatRect visibleArea({ 0.f,0.f }, { static_cast<float>(resized->size.x),static_cast<float>(resized->size.y) });
+                window.setView(sf::View(visibleArea));
+            }
             ui.handleEvent(*event, window, board, network);
         }
 
-        // ==========================================
-        // [SERVER CONNECTION: RECEIVING MOVES]
-        // Here you will check if the server sent you an
-        // opponent's move (e.g., "e7e5"). 
-        // If it did, you run: board.makeMove("e7", "e5");
-        // ==========================================
-
-        // 3. Draw the board
         window.clear();
         ui.draw(window, board);
         window.display();

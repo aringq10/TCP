@@ -1,7 +1,14 @@
 #include <iostream>
 #include "UI.hpp"
 
-ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-1), m_selectedY(-1) {}
+ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-1), m_selectedY(-1) {
+    m_hasfont = m_font.openFromFile("font.ttf");
+
+    m_hasBackground = m_bgTexture.loadFromFile("background.jpg");
+    if (m_hasBackground) {
+        m_bgSprite.setTexture(m_bgTexture);
+    }
+}
 
 std::string ChessBoardUI::gridToNotation(int x, int y) const {
     char file = 'a' + x;
@@ -11,7 +18,6 @@ std::string ChessBoardUI::gridToNotation(int x, int y) const {
 
 void ChessBoardUI::calculateValidMoves(Board& board) {
     m_validMoves.clear();
-    // Assuming your friend made isValidMove public in Board.h!
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
             if (board.isValidMove(m_selectedX, m_selectedY, x, y)) {
@@ -21,16 +27,31 @@ void ChessBoardUI::calculateValidMoves(Board& board) {
     }
 }
 
+//Render board in the middle
+sf::Vector2f ChessBoardUI::getBoardOffset(const sf::RenderTarget& target) const {
+    float boardSize = m_tileSize * 8.0fl;
+    sf::Vector2f viewSize = target.getView().getSize();
+    float offsetX = (viewSize.x - boardSize) / 2.0f;
+    float offsetY = (viewSize.y - boardSize) / 2.0f;
+    return { offsetX,offsetY };
+}
+
 void ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindow& window, Board& board, ChessNetwork& network) {
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
+            sf::Vector2f worldPos = window.mapPixelToCoords(mousePressed->position);
+
+            sf::Vector2f offset = getBoardOffset(window);
+            float relativeX = worldPos.x - offset.x;
+            float relativeY = worldPos.y - offset.y;
+
+            if (relativeX < 0 || relativeY < 0) return;
 
             int gridX = mousePressed->position.x / static_cast<int>(m_tileSize);
             int gridY = mousePressed->position.y / static_cast<int>(m_tileSize);
 
             if (gridX >= 0 && gridX < 8 && gridY >= 0 && gridY < 8) {
 
-                // If we already have a piece selected, check if we clicked a valid move
                 if (m_selectedX != -1 && m_selectedY != -1) {
                     bool isValidMoveClicked = false;
                     for (const auto& move : m_validMoves) {
@@ -44,15 +65,8 @@ void ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindow& w
                         std::string from = gridToNotation(m_selectedX, m_selectedY);
                         std::string to = gridToNotation(gridX, gridY);
 
-                        // Tell your friend's logic to make the move
                         if (board.makeMove(from, to)) {
                             std::cout << "Local Move made: " << from << " to " << to << std::endl;
-
-                            // ==========================================
-                            // [SERVER CONNECTION: SENDING MOVES]
-                            // When your backend teammates are ready, this is 
-                            // where you will call network.sendMove(from, to);
-                            // ==========================================
 
                             if (!network.send_move(from, to)) {
                                 std::cout << "Could not send move to server" << std::endl;
@@ -67,7 +81,6 @@ void ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindow& w
                     }
                 }
 
-                // If we didn't complete a move, handle selecting a piece
                 const Piece(&grid)[8][8] = board.getBoard();
                 if (grid[gridY][gridX] != EMPTY) {
                     m_selectedX = gridX;
@@ -85,6 +98,17 @@ void ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindow& w
 }
 
 void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
+    if (m_hasBackground) {
+        //stretch to fit
+        sf::Vector2f targetSize = target.getView().getSize();
+        sf::Vector2f textureSize(m_bgTexture.getSize());
+        m_bgSprite, setScale({ targetSize.x / textureSize.x,targetSize.y / textureSize.y });
+        target.draw(m_bgSprite);
+    }
+    sf::RenderStates states;
+    sf::Vector2f offset getBoardOffset(target);
+    states.transform.translate({ offset.x,offset.y });
+
     sf::RectangleShape square(sf::Vector2f({ m_tileSize, m_tileSize }));
 
     for (int x = 0; x < 8; ++x) {
@@ -92,7 +116,7 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
             square.setPosition({ x * m_tileSize, y * m_tileSize });
             if ((x + y) % 2 == 0) square.setFillColor(sf::Color(240, 217, 181));
             else square.setFillColor(sf::Color(181, 136, 99));
-            target.draw(square);
+            target.draw(square,states);
         }
     }
 
@@ -148,5 +172,21 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
                 target.draw(pieceShape);
             }
         }
+    }
+
+    if (m_hasfont && target.getView().getSize().x > (m_tileSize * 8.0f) + 200.f) {
+        sf::Text leftText(m_font);
+        leftText.setString("ALIO");
+        leftText.setCharacterSize(20);
+        leftText.setFillColor(sf::Color::White);
+        leftText.setPosition({ 20.f,20.f });
+        target.draw(leftText);
+
+        sf::Text leftText(m_font);
+        leftText.setString("VALIO");
+        leftText.setCharacterSize(20);
+        leftText.setFillColor(sf::Color::White);
+        leftText.setPosition({ target.getView().getSize().x - 180.f,20.f });
+        target.draw(leftText);
     }
 }
