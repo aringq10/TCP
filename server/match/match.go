@@ -68,6 +68,7 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
         to := string(data[8:10])
 
         if p.Color == m.WhoseTurn && m.Board.MakeMove(p.Color, from, to) {
+            log.Print(m.Board.String())
             m.NextTurn()
             p.Conn.WriteString("ACPT")
             for _, opp := range m.Players {

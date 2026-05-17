@@ -1,12 +1,38 @@
 package chess
 
+import (
+	"fmt"
+	"strings"
+)
+
+// First index is row: 0 = rank 1, 7 = rank 8.
+// Second index is column: 0 = file a, 7 = file h.
 type Board [8][8]Piece
+
+func (b *Board) String() string {
+    var sb strings.Builder
+    sb.WriteByte('\n')
+    for row := 7; row >= 0; row-- {
+        sb.WriteString(fmt.Sprintf("%d ", row+1))
+        for col := range 8 {
+            if p := b[row][col]; p != nil {
+                sb.WriteString(p.String())
+            } else {
+                sb.WriteByte('*')
+            }
+            sb.WriteByte(' ')
+        }
+        sb.WriteByte('\n')
+    }
+    sb.WriteString("  a b c d e f g h\n")
+    return sb.String()
+}
 
 func NewBoard() *Board {
     var b Board
-    for col := 0; col < 8; col++ {
-        b[1][col] = &Pawn{basePiece{Clr: WHITE}}
-        b[6][col] = &Pawn{basePiece{Clr: BLACK}}
+    for col := range 8 {
+        b[1][col] = &Pawn{basePiece{color: WHITE}}
+        b[6][col] = &Pawn{basePiece{color: BLACK}}
     }
     return &b
 }
@@ -37,5 +63,6 @@ func (b *Board) MakeMove(playerColor Color, from string, to string) bool {
     }
 
     exec()
+    piece.IncMovesMade()
     return true
 }
