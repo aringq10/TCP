@@ -41,6 +41,9 @@ A traditional chess game that can be played online, either P2P or on a centraliz
 ## Github repo & Proof of Concept: 
 [https://github.com/aringq10/TCP](https://github.com/aringq10/TCP/tree/main/proof_of_concept)
 ![[proof_of_concept.png|450]]
+
+## UML class diagram after TP2 (with plans for TP3)
+![[Pasted image 20260517192707.png|600]]
 ## Project costs
 
 |                    | Time spent by |             |           |          |         |          |           |
@@ -48,6 +51,6 @@ A traditional chess game that can be played online, either P2P or on a centraliz
 | Name               | Person        | Facilitator | Architect | Builder  | Critic  | Designer | Exhibitor |
 | Aringas Civilka    | 17h15min      | 15min       | 7h50min   | 6h10min  | 2h      | 0h       | 0h        |
 | Adomas Pimpė       | 14h30min      | 0h          | 8h        | 4h       | 2h30min | 0h       | 0h        |
-| Jonas Kirkilovskis | 13h15min      | 0h          | 7h15min   | 4h30min  | 1h30min | 0h       | 0h        |
-| Girius Frankonis   | 9h30min       | 0h          | 4h30min   | 3h       | 1h      | 1h       | 0h        |
-| Total:             | 54h30min      | 15min       | 27h35min  | 17h40min | 7h      | 1h       | 0h        |
+| Jonas Kirkilovskis | 14h15min      | 0h          | 7h15min   | 5h30min  | 1h30min | 0h       | 0h        |
+| Girius Frankonis   | 12h           | 0h          | 4h30min   | 5h       | 1h      | 1h30min  | 0h        |
+| Total:             | 58h           | 15min       | 27h35min  | 20h40min | 7h      | 1h30min  | 0h        |
