@@ -22,6 +22,10 @@ private:
     sf::Font m_font;
     bool m_hasfont;
 
+    sf::Texture m_bgTexture;
+    sf::Sprite m_bgSprite;
+    bool m_hasBackground;
+
     std::string gridToNotation(int x, int y) const;
     void calculateValidMoves(Board& board);
 
