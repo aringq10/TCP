@@ -1,7 +1,7 @@
 #include <iostream>
 #include "UI.hpp"
 
-ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-1), m_selectedY(-1) {
+ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-1), m_selectedY(-1), m_isFlipped(false), m_bgSprite(m_bgTexture) {
     m_hasfont = m_font.openFromFile("font.ttf");
 
     m_hasBackground = m_bgTexture.loadFromFile("background.jpg");
@@ -10,7 +10,7 @@ ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-
     }
 }
 
-void ChessBoardUI::setFLipped(bool isFlipped) {
+void ChessBoardUI::setFlipped(bool isFlipped) {
     m_isFlipped = isFlipped;
 }
 
@@ -33,7 +33,7 @@ void ChessBoardUI::calculateValidMoves(Board& board) {
 
 //Render board in the middle
 sf::Vector2f ChessBoardUI::getBoardOffset(const sf::RenderTarget& target) const {
-    float boardSize = m_tileSize * 8.0fl;
+    float boardSize = m_tileSize * 8.0f;
     sf::Vector2f viewSize = target.getView().getSize();
     float offsetX = (viewSize.x - boardSize) / 2.0f;
     float offsetY = (viewSize.y - boardSize) / 2.0f;
@@ -111,11 +111,11 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
         //stretch to fit
         sf::Vector2f targetSize = target.getView().getSize();
         sf::Vector2f textureSize(m_bgTexture.getSize());
-        m_bgSprite, setScale({ targetSize.x / textureSize.x,targetSize.y / textureSize.y });
+        const_cast<sf::Sprite&>(m_bgSprite).setScale({ targetSize.x / textureSize.x, targetSize.y / textureSize.y });
         target.draw(m_bgSprite);
     }
     sf::RenderStates states;
-    sf::Vector2f offset getBoardOffset(target);
+    sf::Vector2f offset = getBoardOffset(target);
     states.transform.translate({ offset.x,offset.y });
 
     sf::RectangleShape square(sf::Vector2f({ m_tileSize, m_tileSize }));
