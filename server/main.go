@@ -13,16 +13,34 @@ const PORT  = 6767
 const MOUNT = "/ws"
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
-    _, err := conn.SetupConn(w, r)
+    c, err := conn.SetupConn(w, r)
     if err != nil {
         log.Println(err)
         return
     }
 
-    log.Printf("ws connection from %s, total %d", r.RemoteAddr, conn.Conns.Count())
+    log.Printf("WS: connection from %s, total %d", r.RemoteAddr, conn.Conns.Count())
 
-    if conn.Conns.Count() >= 2 {
-        go match.HandleMatch(conn.Conns.Get(0), conn.Conns.Get(1))
+    go c.ReadToChan()
+
+    if p1, p2, ok := conn.Conns.TryDequeue2(); ok {
+        go match.HandleMatch(p1, p2)
+    }
+
+    for {
+        select {
+        case _, ok := <-c.OutCh:
+            // Read error or Conn closed before match start
+            if !ok {
+                conn.Conns.RemoveConn(c)
+                log.Printf("WS: %s disconnected before match, %d", r.RemoteAddr, conn.Conns.Count())
+                return
+            }
+        case <-c.DoneCh:
+            // Match started
+            log.Printf("WS: DoneCh signalled start of match for %s %d", r.RemoteAddr, conn.Conns.Count())
+            return
+        }
     }
 }
 

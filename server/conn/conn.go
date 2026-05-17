@@ -2,7 +2,7 @@ package conn
 
 import (
 	"errors"
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -24,6 +24,8 @@ var upgrader = websocket.Upgrader{
 type Conn struct {
     WsConn *websocket.Conn
     SbsqInvl int // subsequent INVL message responses to WsConn
+    OutCh chan []byte
+    DoneCh chan struct{}
 }
 
 func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
@@ -32,10 +34,9 @@ func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
         return nil, errors.New("upgrade failed:" + err.Error())
     }
 
-    c := &Conn{WsConn: wsConn}
+    c := &Conn{WsConn: wsConn, OutCh: make(chan []byte), DoneCh: make(chan struct{})}
 
     if Conns.Count() >= QUEUE_LIMIT {
-        Conns.RemoveConn(c)
         c.Close("queue is full")
         return nil, errors.New("connection ended: queue is full")
     }
@@ -88,14 +89,14 @@ func (c *Conn) Close(reason string) error {
     return nil
 }
 
-func (c *Conn) ReadToChan(ch chan<- []byte) {
+func (c *Conn) ReadToChan() {
     for {
         _, data, err := c.Read()
         if err != nil {
-            fmt.Println("reading error:", err)
+            log.Println("reading error:", err)
             break
         }
-        ch <- data
+        c.OutCh <- data
     }
-    close(ch)
+    close(c.OutCh)
 }

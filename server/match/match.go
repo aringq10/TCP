@@ -18,6 +18,7 @@ type Match struct {
     Board *chess.Board
     Players []Player
     WhoseTurn chess.Color
+    endSignal chan string
 }
 
 func (m *Match) SendColors() {
@@ -26,9 +27,13 @@ func (m *Match) SendColors() {
     }
 }
 
-func (m *Match) End() {
+func (m *Match) SignalEnd(reason string) {
+    m.endSignal <- reason
+}
+
+func (m *Match) End(reason string) {
     for _, p := range m.Players {
-        p.Conn.Close("End Of Match")
+        p.Conn.Close("EOM: " + reason)
     }
 }
 
@@ -42,7 +47,7 @@ func (m *Match) NextTurn() {
 
 func (m *Match) HandleMessage(p *Player, data []byte) {
     if p.Conn.SbsqInvl > MAX_INVL {
-        m.End()
+        m.SignalEnd("Too many invalid messages from " + p.Color.String())
         return
     }
     if len(data) < 4 {
@@ -65,9 +70,9 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
         if p.Color == m.WhoseTurn && m.Board.MakeMove(p.Color, from, to) {
             m.NextTurn()
             p.Conn.WriteString("ACPT")
-            for _, v := range m.Players {
-                if v != *p {
-                    v.Conn.Write(data[:10])
+            for _, opp := range m.Players {
+                if opp != *p {
+                    opp.Conn.Write(data[:10])
                 }
             }
         } else {
@@ -79,47 +84,39 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
 }
 
 func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
-    conn.Conns.RemoveConn(connWhite)
-    conn.Conns.RemoveConn(connBlack)
+    log.Println("Match: started", connWhite.WsConn.RemoteAddr(), connBlack.WsConn.RemoteAddr())
+    defer log.Println("Match: ended", connWhite.WsConn.RemoteAddr(), connBlack.WsConn.RemoteAddr())
 
-    log.Println("Match started between", connWhite.WsConn.RemoteAddr(), "with", connBlack.WsConn.RemoteAddr())
-    defer log.Println("Match ended between", connWhite.WsConn.RemoteAddr(), "with", connBlack.WsConn.RemoteAddr())
+    // Signal that that match has started, stop discarding messages
+    connWhite.DoneCh <- struct{}{}
+    connBlack.DoneCh <- struct{}{}
 
     var m Match
-
     m.Board = chess.NewBoard()
     m.WhoseTurn = chess.WHITE
-
     m.Players = []Player{
         {connWhite, chess.WHITE},
         {connBlack, chess.BLACK},
     }
 
-    defer m.End()
-
     m.SendColors()
-
-    chWhite := make(chan []byte)
-    chBlack := make(chan []byte)
-
-    go connWhite.ReadToChan(chWhite)
-    go connBlack.ReadToChan(chBlack)
-
-    var data []byte
-    var ok bool
 
     for {
         select {
-        case data, ok = <-chWhite:
+        case data, ok := <-connWhite.OutCh:
             if !ok {
+                m.SignalEnd(m.Players[0].Color.String() + " disconnected")
                 return
             }
             m.HandleMessage(&m.Players[0], data)
-        case data, ok = <-chBlack:
+        case data, ok := <-connBlack.OutCh:
             if !ok {
+                m.SignalEnd(m.Players[1].Color.String() + " disconnected")
                 return
             }
             m.HandleMessage(&m.Players[1], data)
+        case reason := <-m.endSignal:
+            m.End(reason)
         }
     }
 }
