@@ -6,7 +6,7 @@ ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-
 
     m_hasBackground = m_bgTexture.loadFromFile("background.jpg");
     if (m_hasBackground) {
-        m_bgSprite.setTexture(m_bgTexture);
+        m_bgSprite.setTexture(m_bgTexture,true);
     }
 }
 
