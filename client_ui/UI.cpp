@@ -199,11 +199,11 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
         leftText.setPosition({ 20.f,20.f });
         target.draw(leftText);
 
-        sf::Text leftText(m_font);
-        leftText.setString("VALIO");
-        leftText.setCharacterSize(20);
-        leftText.setFillColor(sf::Color::White);
-        leftText.setPosition({ target.getView().getSize().x - 180.f,20.f });
-        target.draw(leftText);
+        sf::Text rightText(m_font);
+        rightText.setString("VALIO");
+        rightText.setCharacterSize(20);
+        rightText.setFillColor(sf::Color::White);
+        rightText.setPosition({ target.getView().getSize().x - 180.f,20.f });
+        target.draw(rightText);
     }
 }
