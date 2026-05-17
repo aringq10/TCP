@@ -10,6 +10,10 @@ ChessBoardUI::ChessBoardUI(float tileSize) : m_tileSize(tileSize), m_selectedX(-
     }
 }
 
+void ChessBoardUI::setFLipped(bool isFlipped) {
+    m_isFlipped = isFlipped;
+}
+
 std::string ChessBoardUI::gridToNotation(int x, int y) const {
     char file = 'a' + x;
     char rank = '8' - y;
@@ -47,8 +51,13 @@ void ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindow& w
 
             if (relativeX < 0 || relativeY < 0) return;
 
-            int gridX = mousePressed->position.x / static_cast<int>(m_tileSize);
-            int gridY = mousePressed->position.y / static_cast<int>(m_tileSize);
+            int gridX = static_cast<int>(relativeX / m_tileSize);
+            int gridY = static_cast<int>(relativeY / m_tileSize);
+
+            if (m_isFlipped) {
+                gridX = 7 - gridX;
+                gridY = 7 - gridY;
+            }
 
             if (gridX >= 0 && gridX < 8 && gridY >= 0 && gridY < 8) {
 
@@ -113,7 +122,9 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
 
     for (int x = 0; x < 8; ++x) {
         for (int y = 0; y < 8; ++y) {
-            square.setPosition({ x * m_tileSize, y * m_tileSize });
+            int visX = m_isFlipped ? 7 - x : x;
+            int visY = m_isFlipped ? 7 - y : y;
+            square.setPosition({ visX * m_tileSize, visY * m_tileSize });
             if ((x + y) % 2 == 0) square.setFillColor(sf::Color(240, 217, 181));
             else square.setFillColor(sf::Color(181, 136, 99));
             target.draw(square,states);
@@ -121,14 +132,18 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
     }
 
     if (m_selectedX != -1 && m_selectedY != -1) {
-        square.setPosition({ m_selectedX * m_tileSize, m_selectedY * m_tileSize });
+        int visX = m_isFlipped ? 7 - m_selectedX : m_selectedX;
+        int visY = m_isFlipped ? 7 - m_selectedY : m_selectedY;
+        square.setPosition({ visX * m_tileSize, visY * m_tileSize });
         square.setFillColor(sf::Color(255, 255, 51, 150));
-        target.draw(square);
+        target.draw(square,states);
     }
     for (const auto& move : m_validMoves) {
-        square.setPosition({ static_cast<float>(move.x) * m_tileSize, static_cast<float>(move.y) * m_tileSize });
+        int visX = m_isFlipped ? 7 - move.x : move.x;
+        int visY = m_isFlipped ? 7 - move.y : move.y;
+        square.setPosition({ static_cast<float>(visX) * m_tileSize, static_cast<float>(visY) * m_tileSize });
         square.setFillColor(sf::Color(50, 205, 50, 150));
-        target.draw(square);
+        target.draw(square,states);
     }
 
     const Piece(&grid)[8][8] = board.getBoard();
@@ -138,8 +153,10 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
             Piece p = grid[y][x];
 
             if (p != EMPTY) {
+                int visX = m_isFlipped ? 7 - x : x;
+                int visY = m_isFlipped ? 7 - y : y;
                 sf::CircleShape pieceShape(m_tileSize / 2.5f);
-                pieceShape.setPosition({ x * m_tileSize + (m_tileSize * 0.1f), y * m_tileSize + (m_tileSize * 0.1f) });
+                pieceShape.setPosition({ visX * m_tileSize + (m_tileSize * 0.1f), visY * m_tileSize + (m_tileSize * 0.1f) });
 
                 switch (p) {
                 case WHITE_PAWN:
@@ -169,7 +186,7 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
                 default:
                     break;
                 }
-                target.draw(pieceShape);
+                target.draw(pieceShape,states);
             }
         }
     }

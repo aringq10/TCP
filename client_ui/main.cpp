@@ -7,6 +7,7 @@
 
 Board board;
 ChessNetwork network;
+ChessBoardUI ui;
 
 void handle_event(Event e) {
   std::cout << "Handler called" << std::endl;
@@ -39,6 +40,7 @@ void handle_event(Event e) {
     case BLACK:
       std::cout << "You are playing as BLACK" << std::endl;
       board.setColor(Color::BLACK);
+      ui.setFlipped(true);
       break;
 
     // Handle other event types...

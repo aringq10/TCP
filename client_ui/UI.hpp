@@ -9,6 +9,8 @@ class ChessBoardUI {
 public:
     ChessBoardUI(float tileSize);
 
+    void setFlipped(bool isFlipped);
+
     void handleEvent(const sf::Event& event, const sf::RenderWindow& window, Board& board, ChessNetwork& network);
 
     void draw(sf::RenderTarget& target, const Board& board) const;
@@ -25,6 +27,8 @@ private:
     sf::Texture m_bgTexture;
     sf::Sprite m_bgSprite;
     bool m_hasBackground;
+
+    bool m_isFlipped;
 
     std::string gridToNotation(int x, int y) const;
     void calculateValidMoves(Board& board);
