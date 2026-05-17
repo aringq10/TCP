@@ -43,7 +43,7 @@ A traditional chess game that can be played online, either P2P or on a centraliz
 ![[proof_of_concept.png|450]]
 
 ## UML class diagram after TP2 (with plans for TP3)
-![[Pasted image 20260517192707.png|600]]
+![[class_diagram.png|500]]
 ## Project costs
 
 |                    | Time spent by |             |           |          |         |          |           |
