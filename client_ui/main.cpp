@@ -9,6 +9,7 @@ Board board;
 ChessNetwork network;
 ChessBoardUI ui;
 
+//hi
 void handle_event(Event e) {
   std::cout << "Handler called" << std::endl;
   switch (e.type) {
