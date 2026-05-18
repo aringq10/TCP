@@ -12,23 +12,40 @@ Check if you have it:
 cmake --version
 ```
 
-## 2. Install SFML
+## 2. Install Dependencies
+
+Install Boost and SFML 3.0.2:
+
+Linux users can install Boost with one command:
+
+```bash
+sudo apt install libboost-all-dev
+```
+
+Windows users should download the library from https://www.boost.org/releases/latest/ 
+
+## 3. Put in correct directories
+
+Make sure to install dependencies in the correct directories where cmake can find them.
+
+For this project I chose for cmake to check:
+- Linux: `usr/local/`
+- Windows: `C:/local/`
+
+Example:
+```text
+local/
+  SFML-3.0.2
+  boost_1_91_0
+```
 
 The project uses SFML 3.0.2.
 
-Put SFML inside the project like this:
-
-```text
-TCP/
-  Dependencies/
-    SFML/
-```
-
-CMake is set up to look for SFML there automatically.
+CMake is set up to pick the right folder automatically.
 
 (It will still search paths such as `usr/local/` for SFML)
 
-## 3. Configure the Project
+## 4. Configure the Project
 
 Make sure to be in `TCP/` then run:
 
@@ -38,7 +55,7 @@ cmake -B build
 
 This creates the `build` folder and makes CMake find the libraries needed by the project, like SFML.
 
-## 4. Build the Executable
+## 5. Build the Executable
 
 After CMake configures successfully, run:
 
@@ -54,19 +71,15 @@ On Linux, the executable should be:
 build/main
 ```
 
-On Windows, it may be:
+On Windows it should be:
 
 ```text
 build\Debug\main.exe
 ```
 
-or:
-
-```text
-build\Release\main.exe
-```
-
 ## VS Code Note
+
+!!! ONLY WORKS ON LINUX !!!
 
 Cmake is configured to create this file:
 
