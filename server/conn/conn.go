@@ -72,7 +72,6 @@ func (c *Conn) Read() (messageType int, data []byte, err error) {
 func (c *Conn) Close(reason string) error {
     var errors []error
     errors = append(errors,
-        c.WriteString(reason),
         c.WsConn.WriteMessage(
             websocket.CloseMessage,
             websocket.FormatCloseMessage(websocket.CloseNormalClosure, reason),
@@ -93,7 +92,17 @@ func (c *Conn) ReadToChan() {
     for {
         _, data, err := c.Read()
         if err != nil {
-            log.Println("reading error:", err)
+            switch {
+            case errors.Is(err, websocket.ErrReadLimit):
+                // client sent oversized message
+            case websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway):
+                // expected disconnect
+            case websocket.IsUnexpectedCloseError(err):
+                // peer left abnormally — worth logging
+            default:
+                // network / protocol error — also bail
+                log.Println("reading error:", err)
+            }
             break
         }
         c.OutCh <- data

@@ -18,17 +18,12 @@ type Match struct {
     Board *chess.Board
     Players []Player
     WhoseTurn chess.Color
-    endSignal chan string
 }
 
 func (m *Match) SendColors() {
     for _, p := range m.Players {
         p.Conn.WriteString(p.Color.String())
     }
-}
-
-func (m *Match) SignalEnd(reason string) {
-    m.endSignal <- reason
 }
 
 func (m *Match) End(reason string) {
@@ -47,7 +42,7 @@ func (m *Match) NextTurn() {
 
 func (m *Match) HandleMessage(p *Player, data []byte) {
     if p.Conn.SbsqInvl > MAX_INVL {
-        m.SignalEnd("Too many invalid messages from " + p.Color.String())
+        m.End("Too many invalid messages from " + p.Color.String())
         return
     }
     if len(data) < 4 {
@@ -101,23 +96,22 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
     }
 
     m.SendColors()
+    defer m.End("unexpected end of match")
 
     for {
         select {
         case data, ok := <-connWhite.OutCh:
             if !ok {
-                m.SignalEnd(m.Players[0].Color.String() + " disconnected")
+                m.End(m.Players[0].Color.String() + " disconnected")
                 return
             }
             m.HandleMessage(&m.Players[0], data)
         case data, ok := <-connBlack.OutCh:
             if !ok {
-                m.SignalEnd(m.Players[1].Color.String() + " disconnected")
+                m.End(m.Players[1].Color.String() + " disconnected")
                 return
             }
             m.HandleMessage(&m.Players[1], data)
-        case reason := <-m.endSignal:
-            m.End(reason)
         }
     }
 }

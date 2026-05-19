@@ -31,14 +31,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
         select {
         case _, ok := <-c.OutCh:
             // Read error or Conn closed before match start
+            // Otherwise, discard messages
             if !ok {
                 conn.Conns.RemoveConn(c)
-                log.Printf("WS: %s disconnected before match, %d", r.RemoteAddr, conn.Conns.Count())
                 return
             }
         case <-c.DoneCh:
-            // Match started
-            log.Printf("WS: DoneCh signalled start of match for %s %d", r.RemoteAddr, conn.Conns.Count())
+            // Match started: stop discarding messages
             return
         }
     }
