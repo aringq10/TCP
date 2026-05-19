@@ -2,8 +2,10 @@ package match
 
 import (
 	"log"
+	"slices"
 
 	"github.com/aringq10/TCP/server/chess"
+	"github.com/aringq10/TCP/server/chess/classical"
 	"github.com/aringq10/TCP/server/conn"
 )
 
@@ -14,15 +16,36 @@ type Player struct {
     Color chess.Color
 }
 
+func NewPlayer(conn *conn.Conn, color chess.Color) *Player {
+    return &Player{Conn: conn, Color: color}
+}
+
 type Match struct {
     Board *chess.Board
-    Players []Player
+    Players []*Player
     WhoseTurn chess.Color
+}
+
+func NewMatch(board *chess.Board, whoseTurn chess.Color, players ...*Player) *Match {
+    return &Match{
+        Board: board,
+        WhoseTurn: whoseTurn,
+        Players: players,
+    }
 }
 
 func (m *Match) SendColors() {
     for _, p := range m.Players {
         p.Conn.WriteString(p.Color.String())
+    }
+}
+
+func (m *Match) Broadcast(data []byte, excluded ...*Player) {
+    for _, p := range m.Players {
+        if slices.Contains(excluded, p) {
+            continue
+        }
+        p.Conn.Write(data)
     }
 }
 
@@ -41,12 +64,15 @@ func (m *Match) NextTurn() {
 }
 
 func (m *Match) HandleMessage(p *Player, data []byte) {
-    if p.Conn.SbsqInvl > MAX_INVL {
+    if p.Conn.SbsqINVL > MAX_INVL {
         m.End("Too many invalid messages from " + p.Color.String())
         return
     }
-    if len(data) < 4 {
-        p.Conn.WriteInvl()
+
+    l := len(data)
+
+    if l < 4 {
+        p.Conn.WriteINVL()
         return
     }
 
@@ -54,28 +80,37 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
 
     switch msg {
     case "MOVE":
-        if len(data) < 10 {
-            p.Conn.WriteInvl()
+        if l < 10 {
+            p.Conn.WriteINVL()
             break
         }
 
-        from := string(data[5:7])
-        to := string(data[8:10])
+        from, okFrom := chess.ParseSquare(string(data[5:7]))
+        to,   okTo   := chess.ParseSquare(string(data[8:10]))
 
-        if p.Color == m.WhoseTurn && m.Board.MakeMove(p.Color, from, to) {
-            log.Print(m.Board.String())
-            m.NextTurn()
-            p.Conn.WriteString("ACPT")
-            for _, opp := range m.Players {
-                if opp != *p {
-                    opp.Conn.Write(data[:10])
-                }
-            }
-        } else {
-            p.Conn.WriteString("RJCT")
+        if !okFrom || !okTo {
+            p.Conn.WriteRJCT()
+            return
         }
+
+        if p.Color != m.WhoseTurn {
+            p.Conn.WriteRJCT()
+            return
+        }
+
+        if !m.Board.MakeMove(chess.NewMove(p.Color, from, to)) {
+            p.Conn.WriteRJCT()
+            return
+        }
+
+        log.Print(m.Board.String())
+
+        m.NextTurn()
+        p.Conn.WriteACPT()
+        m.Broadcast(data[:10], p)
+
     default:
-        p.Conn.WriteInvl()
+        p.Conn.WriteINVL()
     }
 }
 
@@ -83,17 +118,12 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
     log.Println("Match: started", connWhite.WsConn.RemoteAddr(), connBlack.WsConn.RemoteAddr())
     defer log.Println("Match: ended", connWhite.WsConn.RemoteAddr(), connBlack.WsConn.RemoteAddr())
 
-    // Signal that that match has started, stop discarding messages
-    connWhite.DoneCh <- struct{}{}
-    connBlack.DoneCh <- struct{}{}
+    connWhite.SignalMatchStart()
+    connBlack.SignalMatchStart()
 
-    var m Match
-    m.Board = chess.NewBoard()
-    m.WhoseTurn = chess.WHITE
-    m.Players = []Player{
-        {connWhite, chess.WHITE},
-        {connBlack, chess.BLACK},
-    }
+    whiteP := NewPlayer(connWhite, chess.WHITE)
+    blackP := NewPlayer(connBlack, chess.BLACK)
+    m := NewMatch(classical.NewBoard(), chess.WHITE, whiteP, blackP)
 
     m.SendColors()
     defer m.End("unexpected end of match")
@@ -105,13 +135,13 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
                 m.End(m.Players[0].Color.String() + " disconnected")
                 return
             }
-            m.HandleMessage(&m.Players[0], data)
+            m.HandleMessage(m.Players[0], data)
         case data, ok := <-connBlack.OutCh:
             if !ok {
                 m.End(m.Players[1].Color.String() + " disconnected")
                 return
             }
-            m.HandleMessage(&m.Players[1], data)
+            m.HandleMessage(m.Players[1], data)
         }
     }
 }

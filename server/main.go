@@ -36,7 +36,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
                 conn.Conns.RemoveConn(c)
                 return
             }
-        case <-c.DoneCh:
+        case <-c.MatchStartCh:
             // Match started: stop discarding messages
             return
         }

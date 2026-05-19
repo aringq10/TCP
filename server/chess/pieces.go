@@ -17,7 +17,7 @@ func (c Color) String() string {
 }
 
 type Piece interface {
-    IsValidMove(b *Board, fromCol, fromRow, toCol, toRow int) (valid bool, execute func())
+    IsValidMove(b *Board, m Move) (execute func(), valid bool)
     String() string
     Color() Color
     SetColor(c Color)
@@ -25,23 +25,27 @@ type Piece interface {
     IncMovesMade()
 }
 
-type basePiece struct {
+type BasePiece struct {
     color Color
     movesMade int
 }
 
-func (p *basePiece) Color() Color {
+func NewBasePiece(c Color) BasePiece {
+    return BasePiece{color: c}
+}
+
+func (p *BasePiece) Color() Color {
     return p.color
 }
 
-func (p *basePiece) SetColor(c Color) {
+func (p *BasePiece) SetColor(c Color) {
     p.color = c
 }
 
-func (p *basePiece) MovesMade() int {
+func (p *BasePiece) MovesMade() int {
     return p.movesMade
 }
 
-func (p *basePiece) IncMovesMade() {
+func (p *BasePiece) IncMovesMade() {
     p.movesMade++
 }

@@ -1,20 +1,30 @@
-package chess
+package classical
+
+import (
+    "github.com/aringq10/TCP/server/chess"
+)
 
 type Pawn struct {
-    basePiece
+    chess.BasePiece
+}
+
+func NewPawn(c chess.Color) *Pawn {
+    return &Pawn{chess.NewBasePiece(c)}
 }
 
 func (p *Pawn) String() string {
-    if p.Color() == WHITE {
+    if p.Color() == chess.WHITE {
         return "P"
     } else {
         return "p"
     }
 }
 
-func (p *Pawn) IsValidMove(b *Board, fromCol, fromRow, toCol, toRow int) (valid bool, execute func()) {
+func (p *Pawn) IsValidMove(b *chess.Board, m chess.Move) (execute func(), valid bool) {
+    fromRow, fromCol, toRow, toCol := m.From.Row, m.From.Col, m.To.Row, m.To.Col
+
     var dir, startRow int
-    if p.Color() == WHITE {
+    if p.Color() == chess.WHITE {
         dir, startRow = 1, 1
     } else {
         dir, startRow = -1, 6
@@ -36,17 +46,17 @@ func (p *Pawn) IsValidMove(b *Board, fromCol, fromRow, toCol, toRow int) (valid 
     case (dCol == 1 || dCol == -1) && dRow == dir &&
         target == nil && b[fromRow][toCol].MovesMade() == 1:
         // en pessant
-        return true, func() {
+        return func() {
             b[toRow][toCol] = b[fromRow][fromCol]
             b[fromRow][fromCol] = nil
             b[fromRow][toCol] = nil
-        }
+        }, true
     default:
-        return false, nil
+        return nil, false
     }
 
-    return true, func() {
+    return func() {
         b[toRow][toCol] = b[fromRow][fromCol]
         b[fromRow][fromCol] = nil
-    }
+    }, true
 }
