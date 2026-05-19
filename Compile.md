@@ -79,7 +79,7 @@ build\Debug\main.exe
 
 ## VS Code Note
 
-!!! ONLY WORKS ON LINUX !!!
+!!! ONLY WORKS ON LINUX (OR NINJA CMAKE)!!!
 
 Cmake is configured to create this file:
 
