@@ -30,8 +30,7 @@ A traditional chess game that can be played online, either P2P or on a centraliz
 <div style="page-break-after: always;"></div>
 
 ## Data flow diagram
-![[data_flow_diagram.png|600]]
-
+![[data-flow.png|600]]
 <div style="page-break-after: always;"></div>
 
 ## Technology stack:
@@ -46,6 +45,29 @@ A traditional chess game that can be played online, either P2P or on a centraliz
 ![[class_diagram.png|500]]
 ## Project costs
 
+### TP1
+|                    | Time spent by |             |           |         |        |          |           |
+| -----------------  | ------------- | ----------- | --------- | ------- | ------ | -------- | --------- |
+| Name               | Person        | Facilitator | Architect | Builder | Critic | Designer | Exhibitor |
+| Aringas Civilka    | 4h40min       | 5min        | 4h        | 35min   | 0h     | 0h       | 0h        |
+| Adomas Pimpė       | 4h30min       | 0h          | 4h        | 0h      | 30min  | 0h       | 0h        |
+| Jonas Kirkilovskis | 4h            | 0h          | 4h        | 0h      | 0h     | 0h       | 0h        |
+| Girius Frankonis   | 4h            | 0h          | 4h        | 0h      | 0h     | 0h       | 0h        |
+| Total:             | 17h10min      | 5min        | 16h       | 35min   | 30min  | 0h       | 0h        |
+
+### TP2
+|                    | Time spent by |             |           |         |         |          |           |
+| ------------------ | ------------- | ----------- | --------- | ------- | ------- | -------- | --------- |
+| Name               | Person        | Facilitator | Architect | Builder | Critic  | Designer | Exhibitor |
+| Aringas Civilka    | 12h35min      | 10min       | 3h50min   | 5h35min | 2h      | 0h       | 0h        |
+| Adomas Pimpė       | 10h           | 0h          | 4h        | 4h      | 2h      | 0h       | 0h        |
+| Jonas Kirkilovskis | 10h15min      | 0h          | 3h15min   | 5h30min | 1h30min | 0h       | 0h        |
+| Girius Frankonis   | 8h            | 0h          | 30min     | 5h      | 1h      | 1h30min  | 0h        |
+| Total:             | 40h50min      | 10min       | 11h35min  | 20h5min | 6h30min | 1h30min  | 0h        |
+
+<div style="page-break-after: always;"></div>
+
+### TP1 + TP2
 |                    | Time spent by |             |           |          |         |          |           |
 | ------------------ | ------------- | ----------- | --------- | -------- | ------- | -------- | --------- |
 | Name               | Person        | Facilitator | Architect | Builder  | Critic  | Designer | Exhibitor |
