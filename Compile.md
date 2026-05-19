@@ -28,13 +28,11 @@ Windows users should download the library from https://www.boost.org/releases/la
 
 Make sure to install dependencies in the correct directories where cmake can find them.
 
-For this project I chose for cmake to check:
-- Linux: `usr/local/`
-- Windows: `C:/local/`
+For this project you can save the dependencies inside Dependencies folder
 
 Example:
 ```text
-local/
+Dependencies/
   SFML-3.0.2
   boost_1_91_0
 ```
@@ -43,7 +41,7 @@ The project uses SFML 3.0.2.
 
 CMake is set up to pick the right folder automatically.
 
-(It will still search paths such as `usr/local/` for SFML)
+(It will still search paths such as `usr/` for SFML)
 
 ## 4. Configure the Project
 

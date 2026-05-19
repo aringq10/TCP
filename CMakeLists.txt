@@ -1,33 +1,39 @@
 cmake_minimum_required(VERSION 3.22)
 project(main LANGUAGES CXX)
 
-# Sugeneruoja compile_commands.json, padeda IDE kad ne errorintu (vscode su clang extensionu)
+# Sugeneruoja compile_commands.json, padeda IDE kad ne errorintu (vscode su clang extensionu) Veikia tik specialuose cmake versijose (pvz. NINJA)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(WIN32)
-    list(APPEND CMAKE_PREFIX_PATH "C:/local")
-    file(GLOB TCP_LOCAL_PACKAGE_DIRS
-        "C:/local/*"
-        "C:/local/*/*"
-    )
-else()
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local")
-    file(GLOB TCP_LOCAL_PACKAGE_DIRS
-        "/usr/local/*"
-        "/usr/local/*/*"
-    )
-endif()
+set(TCP_DEPENDENCIES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies")
+file(GLOB TCP_LOCAL_PACKAGE_DIRS CONFIGURE_DEPENDS
+    "${TCP_DEPENDENCIES_DIR}"
+    "${TCP_DEPENDENCIES_DIR}/*"
+    "${TCP_DEPENDENCIES_DIR}/*/*"
+)
 
 list(APPEND CMAKE_PREFIX_PATH ${TCP_LOCAL_PACKAGE_DIRS})
 
-find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
+find_package(SFML 3 REQUIRED
+    COMPONENTS Graphics Window System
+    CONFIG
+    HINTS ${TCP_LOCAL_PACKAGE_DIRS}
+)
 find_package(Threads REQUIRED)
 
-set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost REQUIRED)
+find_path(Boost_INCLUDE_DIR
+    NAMES boost/version.hpp
+    HINTS ${TCP_LOCAL_PACKAGE_DIRS}
+    PATH_SUFFIXES include
+)
+
+if(NOT Boost_INCLUDE_DIR)
+    message(FATAL_ERROR "Boost not found. Put Boost inside ${TCP_DEPENDENCIES_DIR}.")
+endif()
+
+set(Boost_INCLUDE_DIRS "${Boost_INCLUDE_DIR}")
 
 add_executable(main
     main.cpp
