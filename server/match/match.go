@@ -21,12 +21,12 @@ func NewPlayer(conn *conn.Conn, color chess.Color) *Player {
 }
 
 type Match struct {
-    Board *chess.Board
+    Board chess.Board
     Players []*Player
     WhoseTurn chess.Color
 }
 
-func NewMatch(board *chess.Board, whoseTurn chess.Color, players ...*Player) *Match {
+func NewMatch(board chess.Board, whoseTurn chess.Color, players ...*Player) *Match {
     return &Match{
         Board: board,
         WhoseTurn: whoseTurn,
@@ -56,10 +56,10 @@ func (m *Match) End(reason string) {
 }
 
 func (m *Match) NextTurn() {
-    if m.WhoseTurn == chess.WHITE {
-        m.WhoseTurn = chess.BLACK
+    if m.WhoseTurn == classical.White {
+        m.WhoseTurn = classical.Black
     } else {
-        m.WhoseTurn = chess.WHITE
+        m.WhoseTurn = classical.White
     }
 }
 
@@ -85,20 +85,23 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
             break
         }
 
-        from, okFrom := chess.ParseSquare(string(data[5:7]))
-        to,   okTo   := chess.ParseSquare(string(data[8:10]))
+        from, okFrom := m.Board.ParseSquare(string(data[5:7]))
+        to,   okTo   := m.Board.ParseSquare(string(data[8:10]))
 
         if !okFrom || !okTo {
+            log.Println("Invalid square(s)")
             p.Conn.WriteRJCT()
             return
         }
 
         if p.Color != m.WhoseTurn {
+            log.Println("Invalid turn")
             p.Conn.WriteRJCT()
             return
         }
 
         if !m.Board.MakeMove(chess.NewMove(p.Color, from, to)) {
+            log.Println("Move rejected from Board.MakeMove")
             p.Conn.WriteRJCT()
             return
         }
@@ -121,9 +124,11 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
     connWhite.SignalMatchStart()
     connBlack.SignalMatchStart()
 
-    whiteP := NewPlayer(connWhite, chess.WHITE)
-    blackP := NewPlayer(connBlack, chess.BLACK)
-    m := NewMatch(classical.NewBoard(), chess.WHITE, whiteP, blackP)
+    whiteP := NewPlayer(connWhite, classical.White)
+    blackP := NewPlayer(connBlack, classical.Black)
+    m := NewMatch(classical.NewBoard(), classical.White, whiteP, blackP)
+
+    log.Print(m.Board.String())
 
     m.SendColors()
     defer m.End("unexpected end of match")

@@ -1,30 +1,31 @@
 package classical
 
 import (
-    "github.com/aringq10/TCP/server/chess"
+	"github.com/aringq10/TCP/server/chess"
 )
 
 type Pawn struct {
-    chess.BasePiece
+    BasePiece
 }
 
-func NewPawn(c chess.Color) *Pawn {
-    return &Pawn{chess.NewBasePiece(c)}
+func NewPawn(c Color) *Pawn {
+    return &Pawn{NewBasePiece(c)}
 }
 
 func (p *Pawn) String() string {
-    if p.Color() == chess.WHITE {
+    if p.Color() == White {
         return "P"
     } else {
         return "p"
     }
 }
 
-func (p *Pawn) IsValidMove(b *chess.Board, m chess.Move) (execute func(), valid bool) {
+func (p *Pawn) IsValidMove(b *Board, m chess.Move) (execute func(), valid bool) {
+    s := &b.squares
     fromRow, fromCol, toRow, toCol := m.From.Row, m.From.Col, m.To.Row, m.To.Col
 
     var dir, startRow int
-    if p.Color() == chess.WHITE {
+    if p.Color() == White {
         dir, startRow = 1, 1
     } else {
         dir, startRow = -1, 6
@@ -32,31 +33,39 @@ func (p *Pawn) IsValidMove(b *chess.Board, m chess.Move) (execute func(), valid 
 
     dCol := toCol - fromCol
     dRow := toRow - fromRow
-    target := b[toRow][toCol]
+    target := s[toRow][toCol]
+
+    adjacent, _ := s[fromRow][toCol].(*Pawn)
+    enPessantViable := adjacent != nil &&
+        adjacent.Color() != p.Color() &&
+        b.lastMove.To.Row == fromRow &&
+        b.lastMove.To.Col == toCol &&
+        b.lastMove.From.Row == fromRow+2*dir &&
+        b.lastMove.From.Col == toCol
 
     switch {
     case dCol == 0 && dRow == dir && target == nil:
         // single push
     case dCol == 0 && dRow == 2*dir && fromRow == startRow &&
-        target == nil && b[fromRow+dir][fromCol] == nil:
+        target == nil && s[fromRow+dir][fromCol] == nil:
         // double push from starting rank
     case (dCol == 1 || dCol == -1) && dRow == dir &&
         target != nil && target.Color() != p.Color():
         // diagonal capture
     case (dCol == 1 || dCol == -1) && dRow == dir &&
-        target == nil && b[fromRow][toCol].MovesMade() == 1:
+        target == nil && enPessantViable:
         // en pessant
         return func() {
-            b[toRow][toCol] = b[fromRow][fromCol]
-            b[fromRow][fromCol] = nil
-            b[fromRow][toCol] = nil
+            s[toRow][toCol] = s[fromRow][fromCol]
+            s[fromRow][fromCol] = nil
+            s[fromRow][toCol] = nil
         }, true
     default:
         return nil, false
     }
 
     return func() {
-        b[toRow][toCol] = b[fromRow][fromCol]
-        b[fromRow][fromCol] = nil
+        s[toRow][toCol] = s[fromRow][fromCol]
+        s[fromRow][fromCol] = nil
     }, true
 }
