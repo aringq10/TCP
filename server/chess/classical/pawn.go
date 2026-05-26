@@ -1,9 +1,5 @@
 package classical
 
-import (
-	"github.com/aringq10/TCP/server/chess"
-)
-
 type Pawn struct {
     BasePiece
 }
@@ -20,7 +16,7 @@ func (p *Pawn) String() string {
     }
 }
 
-func (p *Pawn) IsValidMove(b *Board, m chess.Move) (execute func(), valid bool) {
+func (p *Pawn) IsValidMove(b *Board, m Move) (execute func(), valid bool) {
     s := &b.squares
     fromRow, fromCol, toRow, toCol := m.From.Row, m.From.Col, m.To.Row, m.To.Col
 

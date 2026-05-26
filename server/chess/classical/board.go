@@ -2,7 +2,6 @@ package classical
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/aringq10/TCP/server/chess"
@@ -12,11 +11,30 @@ type Board struct {
     // First index is row: 0 = rank 1, 7 = rank 8.
     // Second index is column: 0 = file a, 7 = file h.
     squares [8][8]Piece
-    lastMove chess.Move
+    lastMove Move
+    whoseTurn Color
+}
+
+type Square struct {
+    Row int
+    Col int
+}
+
+type Move struct {
+    PlayerColor Color
+    From Square
+    To Square
+}
+
+func (Move) IsMove() {}
+
+func NewMove(playerColor Color, from Square, to Square) Move {
+    return Move{PlayerColor: playerColor, From: from, To: to}
 }
 
 func NewBoard() *Board {
     var b Board
+    b.whoseTurn = White
     s := &b.squares
     for col := range 8 {
         s[1][col] = NewPawn(White)
@@ -47,24 +65,40 @@ func (b *Board) String() string {
 }
 
 func (b *Board) MakeMove(m chess.Move) bool {
-    piece := b.squares[m.From.Row][m.From.Col]
-    if piece == nil || piece.Color() != m.PlayerColor {
-        log.Println("piece nil or color don't match")
+    cm, ok := m.(Move)
+    if !ok {
         return false
     }
 
-    exec, valid := piece.IsValidMove(b, m)
+    if cm.PlayerColor != b.whoseTurn {
+        return false
+    }
+
+    piece := b.squares[cm.From.Row][cm.From.Col]
+    if piece == nil || piece.Color() != cm.PlayerColor {
+        return false
+    }
+
+    exec, valid := piece.IsValidMove(b, cm)
     if !valid || exec == nil {
-        log.Println("exec nil or IsValidMove == false")
         return false
     }
 
     exec()
-    b.lastMove = m
+    b.rotateTurn()
+    b.lastMove = cm
     return true
 }
 
-func (b *Board) ParseSquare(s string) (sq chess.Square, ok bool) {
+func (b *Board) rotateTurn() {
+    if b.whoseTurn == White {
+        b.whoseTurn = Black
+    } else {
+        b.whoseTurn = White
+    }
+}
+
+func ParseSquare(s string) (sq Square, ok bool) {
     if len(s) != 2 {
         return sq, false
     }

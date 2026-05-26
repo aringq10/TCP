@@ -13,23 +13,21 @@ const MAX_INVL = 5
 
 type Player struct {
     Conn *conn.Conn
-    Color chess.Color
+    Color classical.Color
 }
 
-func NewPlayer(conn *conn.Conn, color chess.Color) *Player {
+func NewPlayer(conn *conn.Conn, color classical.Color) *Player {
     return &Player{Conn: conn, Color: color}
 }
 
 type Match struct {
     Board chess.Board
     Players []*Player
-    WhoseTurn chess.Color
 }
 
-func NewMatch(board chess.Board, whoseTurn chess.Color, players ...*Player) *Match {
+func NewMatch(board chess.Board, players ...*Player) *Match {
     return &Match{
         Board: board,
-        WhoseTurn: whoseTurn,
         Players: players,
     }
 }
@@ -55,14 +53,6 @@ func (m *Match) End(reason string) {
     }
 }
 
-func (m *Match) NextTurn() {
-    if m.WhoseTurn == classical.White {
-        m.WhoseTurn = classical.Black
-    } else {
-        m.WhoseTurn = classical.White
-    }
-}
-
 func (m *Match) HandleMessage(p *Player, data []byte) {
     if p.Conn.SbsqINVL > MAX_INVL {
         m.End("Too many invalid messages from " + p.Color.String())
@@ -85,30 +75,21 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
             break
         }
 
-        from, okFrom := m.Board.ParseSquare(string(data[5:7]))
-        to,   okTo   := m.Board.ParseSquare(string(data[8:10]))
+        from, okFrom := classical.ParseSquare(string(data[5:7]))
+        to,   okTo   := classical.ParseSquare(string(data[8:10]))
 
         if !okFrom || !okTo {
-            log.Println("Invalid square(s)")
             p.Conn.WriteRJCT()
             return
         }
 
-        if p.Color != m.WhoseTurn {
-            log.Println("Invalid turn")
-            p.Conn.WriteRJCT()
-            return
-        }
-
-        if !m.Board.MakeMove(chess.NewMove(p.Color, from, to)) {
-            log.Println("Move rejected from Board.MakeMove")
+        if !m.Board.MakeMove(classical.NewMove(p.Color, from, to)) {
             p.Conn.WriteRJCT()
             return
         }
 
         log.Print(m.Board.String())
 
-        m.NextTurn()
         p.Conn.WriteACPT()
         m.Broadcast(data[:10], p)
 
@@ -126,7 +107,7 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
 
     whiteP := NewPlayer(connWhite, classical.White)
     blackP := NewPlayer(connBlack, classical.Black)
-    m := NewMatch(classical.NewBoard(), classical.White, whiteP, blackP)
+    m := NewMatch(classical.NewBoard(), whiteP, blackP)
 
     log.Print(m.Board.String())
 

@@ -2,8 +2,6 @@ package classical
 
 import (
     "testing"
-
-    "github.com/aringq10/TCP/server/chess"
 )
 
 func TestRookIsValidMove(t *testing.T) {
@@ -103,7 +101,7 @@ func TestRookIsValidMove(t *testing.T) {
                 t.Fatalf("no rook at %s", tc.from)
             }
 
-            _, got := rook.IsValidMove(&b, chess.Move{
+            _, got := rook.IsValidMove(&b, Move{
                 PlayerColor: tc.color,
                 From:        from,
                 To:          sq(tc.to),
@@ -120,7 +118,7 @@ func TestRookExecuteMovesPiece(t *testing.T) {
     rook := NewRook(White)
     b.squares[0][0] = rook
 
-    exec, valid := rook.IsValidMove(&b, chess.Move{
+    exec, valid := rook.IsValidMove(&b, Move{
         PlayerColor: White,
         From:        sq("a1"),
         To:          sq("a5"),
@@ -144,7 +142,7 @@ func TestRookExecuteCapturesEnemy(t *testing.T) {
     b.squares[0][0] = rook
     b.squares[0][4] = NewPawn(Black)
 
-    exec, valid := rook.IsValidMove(&b, chess.Move{
+    exec, valid := rook.IsValidMove(&b, Move{
         PlayerColor: White,
         From:        sq("a1"),
         To:          sq("e1"),

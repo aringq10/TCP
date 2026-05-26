@@ -2,19 +2,17 @@ package classical
 
 import (
     "testing"
-
-    "github.com/aringq10/TCP/server/chess"
 )
 
-func sq(s string) chess.Square {
-    return chess.Square{Row: int(s[1] - '1'), Col: int(s[0] - 'a')}
+func sq(s string) Square {
+    return Square{Row: int(s[1] - '1'), Col: int(s[0] - 'a')}
 }
 
 func TestPawnIsValidMove(t *testing.T) {
     cases := []struct {
         name  string
         place map[string]Piece
-        last  chess.Move
+        last  Move
         color Color
         from  string
         to    string
@@ -95,28 +93,28 @@ func TestPawnIsValidMove(t *testing.T) {
         {
             name:  "white en passant",
             place: map[string]Piece{"e5": NewPawn(White), "d5": NewPawn(Black)},
-            last:  chess.Move{From: sq("d7"), To: sq("d5")},
+            last:  Move{From: sq("d7"), To: sq("d5")},
             color: White, from: "e5", to: "d6",
             want: true,
         },
         {
             name:  "white en passant target moved only one square",
             place: map[string]Piece{"e5": NewPawn(White), "d5": NewPawn(Black)},
-            last:  chess.Move{From: sq("d6"), To: sq("d5")},
+            last:  Move{From: sq("d6"), To: sq("d5")},
             color: White, from: "e5", to: "d6",
             want: false,
         },
         {
             name:  "white en passant last move different file",
             place: map[string]Piece{"e5": NewPawn(White), "d5": NewPawn(Black)},
-            last:  chess.Move{From: sq("a7"), To: sq("a5")},
+            last:  Move{From: sq("a7"), To: sq("a5")},
             color: White, from: "e5", to: "d6",
             want: false,
         },
         {
             name:  "white en passant adjacent is own pawn",
             place: map[string]Piece{"e5": NewPawn(White), "d5": NewPawn(White)},
-            last:  chess.Move{From: sq("d7"), To: sq("d5")},
+            last:  Move{From: sq("d7"), To: sq("d5")},
             color: White, from: "e5", to: "d6",
             want: false,
         },
@@ -147,7 +145,7 @@ func TestPawnIsValidMove(t *testing.T) {
         {
             name:  "black en passant",
             place: map[string]Piece{"e4": NewPawn(Black), "d4": NewPawn(White)},
-            last:  chess.Move{From: sq("d2"), To: sq("d4")},
+            last:  Move{From: sq("d2"), To: sq("d4")},
             color: Black, from: "e4", to: "d3",
             want: true,
         },
@@ -168,7 +166,7 @@ func TestPawnIsValidMove(t *testing.T) {
                 t.Fatalf("no pawn at %s", tc.from)
             }
 
-            _, got := pawn.IsValidMove(&b, chess.Move{
+            _, got := pawn.IsValidMove(&b, Move{
                 PlayerColor: tc.color,
                 From:        from,
                 To:          sq(tc.to),
@@ -185,7 +183,7 @@ func TestPawnExecuteSinglePush(t *testing.T) {
     pawn := NewPawn(White)
     b.squares[1][4] = pawn
 
-    exec, valid := pawn.IsValidMove(&b, chess.Move{
+    exec, valid := pawn.IsValidMove(&b, Move{
         PlayerColor: White,
         From:        sq("e2"),
         To:          sq("e3"),
@@ -208,7 +206,7 @@ func TestPawnExecuteDoublePush(t *testing.T) {
     pawn := NewPawn(White)
     b.squares[1][4] = pawn
 
-    exec, valid := pawn.IsValidMove(&b, chess.Move{
+    exec, valid := pawn.IsValidMove(&b, Move{
         PlayerColor: White,
         From:        sq("e2"),
         To:          sq("e4"),
@@ -233,7 +231,7 @@ func TestPawnExecuteCapture(t *testing.T) {
     b.squares[3][4] = pawn
     b.squares[4][3] = enemy
 
-    exec, valid := pawn.IsValidMove(&b, chess.Move{
+    exec, valid := pawn.IsValidMove(&b, Move{
         PlayerColor: White,
         From:        sq("e4"),
         To:          sq("d5"),
@@ -257,9 +255,9 @@ func TestPawnExecuteEnPassant(t *testing.T) {
     black := NewPawn(Black)
     b.squares[4][4] = white
     b.squares[4][3] = black
-    b.lastMove = chess.Move{From: sq("d7"), To: sq("d5")}
+    b.lastMove = Move{From: sq("d7"), To: sq("d5")}
 
-    exec, valid := white.IsValidMove(&b, chess.Move{
+    exec, valid := white.IsValidMove(&b, Move{
         PlayerColor: White,
         From:        sq("e5"),
         To:          sq("d6"),

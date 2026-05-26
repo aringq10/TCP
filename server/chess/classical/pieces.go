@@ -1,9 +1,5 @@
 package classical
 
-import (
-	"github.com/aringq10/TCP/server/chess"
-)
-
 type Color int
 
 const (
@@ -11,7 +7,7 @@ const (
     Black
 )
 
-var colorNames = map[chess.Color]string {
+var colorNames = map[Color]string {
     White: "WHTE",
     Black: "BLCK",
 }
@@ -21,7 +17,7 @@ func (c Color) String() string {
 }
 
 type Piece interface {
-    IsValidMove(b *Board, m chess.Move) (execute func(), valid bool)
+    IsValidMove(b *Board, m Move) (execute func(), valid bool)
     String() string
     Color() Color
 }
