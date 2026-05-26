@@ -107,7 +107,7 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
 
     whiteP := NewPlayer(connWhite, classical.White)
     blackP := NewPlayer(connBlack, classical.Black)
-    m := NewMatch(classical.NewBoard(), whiteP, blackP)
+    m := NewMatch(classical.NewPawnsOnlyBoard(), whiteP, blackP)
 
     log.Print(m.Board.String())
 

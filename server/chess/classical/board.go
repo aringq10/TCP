@@ -41,7 +41,24 @@ func NewBoard() *Board {
         s[6][col] = NewPawn(Black)
     }
     s[0][0], s[0][7] = NewRook(White), NewRook(White)
+    s[0][1], s[0][6] = NewKnight(White), NewKnight(White)
+    s[0][2], s[0][5] = NewBishop(White), NewBishop(White)
+    s[0][3] = NewQueen(White)
     s[7][0], s[7][7] = NewRook(Black), NewRook(Black)
+    s[7][1], s[7][6] = NewKnight(Black), NewKnight(Black)
+    s[7][2], s[7][5] = NewBishop(Black), NewBishop(Black)
+    s[7][3] = NewQueen(Black)
+    return &b
+}
+
+func NewPawnsOnlyBoard() *Board {
+    var b Board
+    b.whoseTurn = White
+    s := &b.squares
+    for col := range 8 {
+        s[1][col] = NewPawn(White)
+        s[6][col] = NewPawn(Black)
+    }
     return &b
 }
 
