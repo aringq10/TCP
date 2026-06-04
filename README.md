@@ -43,6 +43,7 @@ A networked chess game client in C++ and remote server in Go.
 | Server → Client   | `RJCT`             |
 | Server → Opponent | `MOVE <from> <to>` |
 | Server → Both     | `EOM: <reason>`    |
+> `<from>` and `<to>` both consist of one letter (a-h) and one number (1-8), e.g. "MOVE e2 e5".
 
 > `EOM: <reason>` is not a normal data message — it is the reason string of the WebSocket close frame the server sends when ending the match.
 > The `<reason>` payload is the string form of [`classical.Outcome`](server/chess/classical/outcome.go) — a `Result` and an optional `Termination`.
