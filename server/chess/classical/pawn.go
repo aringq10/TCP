@@ -16,9 +16,9 @@ func (p *Pawn) String() string {
     }
 }
 
-func (p *Pawn) IsValidMove(b *Board, m Move) (execute func(), valid bool) {
+func (p *Pawn) IsValidMove(b *Board, from, to Square) (execute func(), valid bool) {
     s := &b.squares
-    fromRow, fromCol, toRow, toCol := m.From.Row, m.From.Col, m.To.Row, m.To.Col
+    fromRow, fromCol, toRow, toCol := from.Row, from.Col, to.Row, to.Col
 
     var dir, startRow int
     if p.Color() == White {

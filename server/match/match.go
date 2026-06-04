@@ -4,7 +4,6 @@ import (
 	"log"
 	"slices"
 
-	"github.com/aringq10/TCP/server/chess"
 	"github.com/aringq10/TCP/server/chess/classical"
 	"github.com/aringq10/TCP/server/conn"
 )
@@ -21,11 +20,12 @@ func NewPlayer(conn *conn.Conn, color classical.Color) *Player {
 }
 
 type Match struct {
-    Board chess.Board
+    Board *classical.Board
     Players []*Player
+    ended bool
 }
 
-func NewMatch(board chess.Board, players ...*Player) *Match {
+func NewMatch(board *classical.Board, players ...*Player) *Match {
     return &Match{
         Board: board,
         Players: players,
@@ -48,6 +48,10 @@ func (m *Match) Broadcast(data []byte, excluded ...*Player) {
 }
 
 func (m *Match) End(reason string) {
+    if m.ended {
+        return
+    }
+    m.ended = true
     for _, p := range m.Players {
         p.Conn.Close("EOM: " + reason)
     }
@@ -93,6 +97,10 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
         p.Conn.WriteACPT()
         m.Broadcast(data[:10], p)
 
+        if m.Board.IsOver() {
+            m.End(m.Board.Outcome().String())
+        }
+
     default:
         p.Conn.WriteINVL()
     }
@@ -107,7 +115,7 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
 
     whiteP := NewPlayer(connWhite, classical.White)
     blackP := NewPlayer(connBlack, classical.Black)
-    m := NewMatch(classical.NewPawnsOnlyBoard(), whiteP, blackP)
+    m := NewMatch(classical.NewBoard(), whiteP, blackP)
 
     log.Print(m.Board.String())
 

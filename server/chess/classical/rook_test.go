@@ -101,11 +101,7 @@ func TestRookIsValidMove(t *testing.T) {
                 t.Fatalf("no rook at %s", tc.from)
             }
 
-            _, got := rook.IsValidMove(&b, Move{
-                PlayerColor: tc.color,
-                From:        from,
-                To:          sq(tc.to),
-            })
+            _, got := rook.IsValidMove(&b, from, sq(tc.to))
             if got != tc.want {
                 t.Errorf("IsValidMove() = %v, want %v", got, tc.want)
             }
@@ -118,11 +114,7 @@ func TestRookExecuteMovesPiece(t *testing.T) {
     rook := NewRook(White)
     b.squares[0][0] = rook
 
-    exec, valid := rook.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("a1"),
-        To:          sq("a5"),
-    })
+    exec, valid := rook.IsValidMove(&b, sq("a1"), sq("a5"))
     if !valid {
         t.Fatal("move flagged invalid")
     }
@@ -142,11 +134,7 @@ func TestRookExecuteCapturesEnemy(t *testing.T) {
     b.squares[0][0] = rook
     b.squares[0][4] = NewPawn(Black)
 
-    exec, valid := rook.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("a1"),
-        To:          sq("e1"),
-    })
+    exec, valid := rook.IsValidMove(&b, sq("a1"), sq("e1"))
     if !valid {
         t.Fatal("capture flagged invalid")
     }

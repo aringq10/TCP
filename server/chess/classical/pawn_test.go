@@ -166,11 +166,7 @@ func TestPawnIsValidMove(t *testing.T) {
                 t.Fatalf("no pawn at %s", tc.from)
             }
 
-            _, got := pawn.IsValidMove(&b, Move{
-                PlayerColor: tc.color,
-                From:        from,
-                To:          sq(tc.to),
-            })
+            _, got := pawn.IsValidMove(&b, from, sq(tc.to))
             if got != tc.want {
                 t.Errorf("IsValidMove() = %v, want %v", got, tc.want)
             }
@@ -183,11 +179,7 @@ func TestPawnExecuteSinglePush(t *testing.T) {
     pawn := NewPawn(White)
     b.squares[1][4] = pawn
 
-    exec, valid := pawn.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("e2"),
-        To:          sq("e3"),
-    })
+    exec, valid := pawn.IsValidMove(&b, sq("e2"), sq("e3"))
     if !valid {
         t.Fatal("single push flagged invalid")
     }
@@ -206,11 +198,7 @@ func TestPawnExecuteDoublePush(t *testing.T) {
     pawn := NewPawn(White)
     b.squares[1][4] = pawn
 
-    exec, valid := pawn.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("e2"),
-        To:          sq("e4"),
-    })
+    exec, valid := pawn.IsValidMove(&b, sq("e2"), sq("e4"))
     if !valid {
         t.Fatal("double push flagged invalid")
     }
@@ -231,11 +219,7 @@ func TestPawnExecuteCapture(t *testing.T) {
     b.squares[3][4] = pawn
     b.squares[4][3] = enemy
 
-    exec, valid := pawn.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("e4"),
-        To:          sq("d5"),
-    })
+    exec, valid := pawn.IsValidMove(&b, sq("e4"), sq("d5"))
     if !valid {
         t.Fatal("capture flagged invalid")
     }
@@ -257,11 +241,7 @@ func TestPawnExecuteEnPassant(t *testing.T) {
     b.squares[4][3] = black
     b.lastMove = Move{From: sq("d7"), To: sq("d5")}
 
-    exec, valid := white.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("e5"),
-        To:          sq("d6"),
-    })
+    exec, valid := white.IsValidMove(&b, sq("e5"), sq("d6"))
     if !valid {
         t.Fatal("en passant flagged invalid")
     }

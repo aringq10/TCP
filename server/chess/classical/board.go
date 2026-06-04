@@ -1,10 +1,8 @@
 package classical
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/aringq10/TCP/server/chess"
+    "fmt"
+    "strings"
 )
 
 type Board struct {
@@ -13,53 +11,75 @@ type Board struct {
     squares [8][8]Piece
     lastMove Move
     whoseTurn Color
-}
-
-type Square struct {
-    Row int
-    Col int
-}
-
-type Move struct {
-    PlayerColor Color
-    From Square
-    To Square
-}
-
-func (Move) IsMove() {}
-
-func NewMove(playerColor Color, from Square, to Square) Move {
-    return Move{PlayerColor: playerColor, From: from, To: to}
+    outcome Outcome
 }
 
 func NewBoard() *Board {
     var b Board
-    b.whoseTurn = White
     s := &b.squares
-    for col := range 8 {
-        s[1][col] = NewPawn(White)
-        s[6][col] = NewPawn(Black)
-    }
+    placePawns(s)
     s[0][0], s[0][7] = NewRook(White), NewRook(White)
     s[0][1], s[0][6] = NewKnight(White), NewKnight(White)
     s[0][2], s[0][5] = NewBishop(White), NewBishop(White)
     s[0][3] = NewQueen(White)
+    s[0][4] = NewKing(White)
     s[7][0], s[7][7] = NewRook(Black), NewRook(Black)
     s[7][1], s[7][6] = NewKnight(Black), NewKnight(Black)
     s[7][2], s[7][5] = NewBishop(Black), NewBishop(Black)
     s[7][3] = NewQueen(Black)
+    s[7][4] = NewKing(Black)
     return &b
 }
 
-func NewPawnsOnlyBoard() *Board {
-    var b Board
-    b.whoseTurn = White
-    s := &b.squares
+func placePawns(s *[8][8]Piece) {
     for col := range 8 {
         s[1][col] = NewPawn(White)
         s[6][col] = NewPawn(Black)
     }
-    return &b
+}
+
+func (b *Board) MakeMove(m Move) bool {
+    if b.IsOver() {
+        return false
+    }
+
+    if m.PlayerColor != b.whoseTurn {
+        return false
+    }
+
+    piece := b.squares[m.From.Row][m.From.Col]
+    if piece == nil || piece.Color() != m.PlayerColor {
+        return false
+    }
+
+    exec, valid := piece.IsValidMove(b, m.From, m.To)
+    if !valid || exec == nil {
+        return false
+    }
+
+    snapshot := b.squares
+
+    exec()
+    if b.isChecked(piece.Color()) {
+        b.squares = snapshot
+        return false
+    }
+
+    b.lastMove = m
+    b.rotateTurn()
+
+    // Did this move end the game for the side now to move?
+    b.outcome = NewOutcome(b.terminationFor(b.whoseTurn), piece.Color())
+
+    return true
+}
+
+func (b *Board) IsOver() bool {
+    return b.outcome.Result.IsOver()
+}
+
+func (b *Board) Outcome() Outcome {
+    return b.outcome
 }
 
 func (b *Board) String() string {
@@ -81,51 +101,121 @@ func (b *Board) String() string {
     return sb.String()
 }
 
-func (b *Board) MakeMove(m chess.Move) bool {
-    cm, ok := m.(Move)
+func (b *Board) rotateTurn() {
+    b.whoseTurn = oppositeColor(b.whoseTurn)
+}
+
+
+func (b *Board) isAttacked(s Square, by Color) bool {
+    attacked := b.squares[s.Row][s.Col]
+    if attacked == nil {
+        return false
+    }
+    if attacked.Color() == by {
+        return false
+    }
+
+    for row := range 8 {
+        for col := range 8 {
+            attacker := b.squares[row][col]
+            if attacker == nil || attacker.Color() != by {
+                continue
+            }
+
+            from := Square{Row: row, Col: col}
+            if _, valid := attacker.IsValidMove(b, from, s); valid {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
+func (b *Board) tryFindKing(c Color) (s Square, ok bool) {
+    for row := range 8 {
+        for col := range 8 {
+            piece := b.squares[row][col]
+            if piece == nil {
+                continue
+            }
+            if _, isKing := piece.(*King); piece.Color() == c && isKing {
+                return Square{Row: row, Col: col}, true
+            }
+        }
+    }
+
+    return Square{}, false
+}
+
+func (b *Board) isChecked(c Color) bool {
+    s, ok := b.tryFindKing(c)
     if !ok {
         return false
     }
 
-    if cm.PlayerColor != b.whoseTurn {
-        return false
-    }
-
-    piece := b.squares[cm.From.Row][cm.From.Col]
-    if piece == nil || piece.Color() != cm.PlayerColor {
-        return false
-    }
-
-    exec, valid := piece.IsValidMove(b, cm)
-    if !valid || exec == nil {
-        return false
-    }
-
-    exec()
-    b.rotateTurn()
-    b.lastMove = cm
-    return true
+    return b.isAttacked(s, oppositeColor(c))
 }
 
-func (b *Board) rotateTurn() {
-    if b.whoseTurn == White {
-        b.whoseTurn = Black
+func (b *Board) getValidMoves(from Square) []func() {
+    piece := b.squares[from.Row][from.Col]
+    if piece == nil {
+        return nil
+    }
+
+    moves := make([]func(), 0, 64)
+
+    for row := range 8 {
+        for col := range 8 {
+            to := Square{Row: row, Col: col}
+            if move, valid := piece.IsValidMove(b, from, to); valid {
+                moves = append(moves, move)
+            }
+        }
+    }
+
+    return moves
+}
+
+func (b *Board) terminationFor(c Color) Termination {
+    _, ok := b.tryFindKing(c)
+    if !ok {
+        return NoTermination
+    }
+
+    friendlySquares := make([]Square, 0, 64)
+
+    // Collect squares containing friendly pieces
+    for row := range 8 {
+        for col := range 8 {
+            piece := b.squares[row][col]
+            if piece == nil {
+                continue
+            }
+            if piece.Color() == c {
+                friendlySquares = append(friendlySquares, Square{Row: row, Col: col})
+            }
+        }
+    }
+
+    snapshot := b.squares
+
+    for _, s := range friendlySquares {
+        moves := b.getValidMoves(s)
+        for _, m := range moves {
+            m()
+            legal := !b.isChecked(c)
+            b.squares = snapshot
+            if legal {
+                return NoTermination
+            }
+        }
+    }
+
+    // No legal move: it's checkmate if the king is in check, otherwise stalemate.
+    if b.isChecked(c) {
+        return Checkmate
     } else {
-        b.whoseTurn = White
+        return Stalemate
     }
-}
-
-func ParseSquare(s string) (sq Square, ok bool) {
-    if len(s) != 2 {
-        return sq, false
-    }
-
-    col, row := int(s[0] - 'a'), int(s[1] - '1')
-    if col < 0 || col > 7 || row < 0 || row > 7 {
-        return sq, false
-    }
-
-    sq.Row = row
-    sq.Col = col
-    return sq, true
 }

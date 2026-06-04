@@ -107,11 +107,7 @@ func TestBishopIsValidMove(t *testing.T) {
                 t.Fatalf("no bishop at %s", tc.from)
             }
 
-            _, got := bishop.IsValidMove(&b, Move{
-                PlayerColor: tc.color,
-                From:        from,
-                To:          sq(tc.to),
-            })
+            _, got := bishop.IsValidMove(&b, from, sq(tc.to))
             if got != tc.want {
                 t.Errorf("IsValidMove() = %v, want %v", got, tc.want)
             }
@@ -124,11 +120,7 @@ func TestBishopExecuteMovesPiece(t *testing.T) {
     bishop := NewBishop(White)
     b.squares[0][2] = bishop
 
-    exec, valid := bishop.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("c1"),
-        To:          sq("h6"),
-    })
+    exec, valid := bishop.IsValidMove(&b, sq("c1"), sq("h6"))
     if !valid {
         t.Fatal("move flagged invalid")
     }
@@ -148,11 +140,7 @@ func TestBishopExecuteCapturesEnemy(t *testing.T) {
     b.squares[0][2] = bishop
     b.squares[5][7] = NewPawn(Black)
 
-    exec, valid := bishop.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("c1"),
-        To:          sq("h6"),
-    })
+    exec, valid := bishop.IsValidMove(&b, sq("c1"), sq("h6"))
     if !valid {
         t.Fatal("capture flagged invalid")
     }

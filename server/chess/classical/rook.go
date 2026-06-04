@@ -16,9 +16,9 @@ func (r *Rook) String() string {
     }
 }
 
-func (r *Rook) IsValidMove(b *Board, m Move) (execute func(), valid bool) {
+func (r *Rook) IsValidMove(b *Board, from, to Square) (execute func(), valid bool) {
     s := &b.squares
-    fromRow, fromCol, toRow, toCol := m.From.Row, m.From.Col, m.To.Row, m.To.Col
+    fromRow, fromCol, toRow, toCol := from.Row, from.Col, to.Row, to.Col
 
     dRow := toRow - fromRow
     dCol := toCol - fromCol

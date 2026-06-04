@@ -125,11 +125,7 @@ func TestKnightIsValidMove(t *testing.T) {
                 t.Fatalf("no knight at %s", tc.from)
             }
 
-            _, got := knight.IsValidMove(&b, Move{
-                PlayerColor: tc.color,
-                From:        from,
-                To:          sq(tc.to),
-            })
+            _, got := knight.IsValidMove(&b, from, sq(tc.to))
             if got != tc.want {
                 t.Errorf("IsValidMove() = %v, want %v", got, tc.want)
             }
@@ -142,11 +138,7 @@ func TestKnightExecuteMovesPiece(t *testing.T) {
     knight := NewKnight(White)
     b.squares[3][3] = knight
 
-    exec, valid := knight.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("d4"),
-        To:          sq("e6"),
-    })
+    exec, valid := knight.IsValidMove(&b, sq("d4"), sq("e6"))
     if !valid {
         t.Fatal("move flagged invalid")
     }
@@ -166,11 +158,7 @@ func TestKnightExecuteCapturesEnemy(t *testing.T) {
     b.squares[3][3] = knight
     b.squares[5][4] = NewPawn(Black)
 
-    exec, valid := knight.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("d4"),
-        To:          sq("e6"),
-    })
+    exec, valid := knight.IsValidMove(&b, sq("d4"), sq("e6"))
     if !valid {
         t.Fatal("capture flagged invalid")
     }

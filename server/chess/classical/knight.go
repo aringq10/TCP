@@ -16,9 +16,9 @@ func (k *Knight) String() string {
     }
 }
 
-func (k *Knight) IsValidMove(b *Board, m Move) (execute func(), valid bool) {
+func (k *Knight) IsValidMove(b *Board, from, to Square) (execute func(), valid bool) {
     s := &b.squares
-    fromRow, fromCol, toRow, toCol := m.From.Row, m.From.Col, m.To.Row, m.To.Col
+    fromRow, fromCol, toRow, toCol := from.Row, from.Col, to.Row, to.Col
 
     dRow := abs(toRow - fromRow)
     dCol := abs(toCol - fromCol)

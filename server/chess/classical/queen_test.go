@@ -119,11 +119,7 @@ func TestQueenIsValidMove(t *testing.T) {
                 t.Fatalf("no queen at %s", tc.from)
             }
 
-            _, got := queen.IsValidMove(&b, Move{
-                PlayerColor: tc.color,
-                From:        from,
-                To:          sq(tc.to),
-            })
+            _, got := queen.IsValidMove(&b, from, sq(tc.to))
             if got != tc.want {
                 t.Errorf("IsValidMove() = %v, want %v", got, tc.want)
             }
@@ -136,11 +132,7 @@ func TestQueenExecuteMovesPieceDiagonal(t *testing.T) {
     queen := NewQueen(White)
     b.squares[0][3] = queen
 
-    exec, valid := queen.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("d1"),
-        To:          sq("h5"),
-    })
+    exec, valid := queen.IsValidMove(&b, sq("d1"), sq("h5"))
     if !valid {
         t.Fatal("move flagged invalid")
     }
@@ -160,11 +152,7 @@ func TestQueenExecuteCapturesEnemy(t *testing.T) {
     b.squares[0][3] = queen
     b.squares[4][3] = NewPawn(Black)
 
-    exec, valid := queen.IsValidMove(&b, Move{
-        PlayerColor: White,
-        From:        sq("d1"),
-        To:          sq("d5"),
-    })
+    exec, valid := queen.IsValidMove(&b, sq("d1"), sq("d5"))
     if !valid {
         t.Fatal("capture flagged invalid")
     }
