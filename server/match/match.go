@@ -126,13 +126,13 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
         select {
         case data, ok := <-connWhite.OutCh:
             if !ok {
-                m.End(m.Players[0].Color.String() + " disconnected")
+                m.End(classical.NewOutcome(classical.Abandonment, m.Players[1].Color).String())
                 return
             }
             m.HandleMessage(m.Players[0], data)
         case data, ok := <-connBlack.OutCh:
             if !ok {
-                m.End(m.Players[1].Color.String() + " disconnected")
+                m.End(classical.NewOutcome(classical.Abandonment, m.Players[0].Color).String())
                 return
             }
             m.HandleMessage(m.Players[1], data)

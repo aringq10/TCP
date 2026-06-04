@@ -42,6 +42,10 @@ A networked chess game client in C++ and remote server in Go.
 | Server → Client   | `ACPT`             |
 | Server → Client   | `RJCT`             |
 | Server → Opponent | `MOVE <from> <to>` |
+| Server → Both     | `EOM: <reason>`    |
+
+> `EOM: <reason>` is not a normal data message — it is the reason string of the WebSocket close frame the server sends when ending the match.
+> The `<reason>` payload is the string form of [`classical.Outcome`](server/chess/classical/outcome.go) — a `Result` and an optional `Termination`.
 
 > Will be expanded in the course of TP3.
 

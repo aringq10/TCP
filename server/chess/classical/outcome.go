@@ -38,6 +38,7 @@ const (
     ThreefoldRepetition
     Resignation
     TimeForfeit
+    Abandonment
     DrawAgreement
 )
 
@@ -50,6 +51,7 @@ var terminationNames = map[Termination]string{
     ThreefoldRepetition:  "threefold repetition",
     Resignation:          "resignation",
     TimeForfeit:          "time forfeit",
+    Abandonment:          "abandonment",
     DrawAgreement:        "draw by agreement",
 }
 
@@ -68,11 +70,11 @@ func (o Outcome) String() string {
 }
 
 // NewOutcome builds the Outcome for a termination. For decisive terminations
-// (Checkmate, Resignation, TimeForfeit) winner names the side that won; it is
-// ignored for draw terminations.
+// (Checkmate, Resignation, TimeForfeit, Abandonment) winner names the side that
+// won; it is ignored for draw terminations.
 func NewOutcome(t Termination, winner Color) Outcome {
     switch t {
-    case Checkmate, Resignation, TimeForfeit:
+    case Checkmate, Resignation, TimeForfeit, Abandonment:
         return Outcome{Result: resultForWinner(winner), Termination: t}
     case Stalemate, InsufficientMaterial, FiftyMoveRule, ThreefoldRepetition, DrawAgreement:
         return Outcome{Result: Draw, Termination: t}
