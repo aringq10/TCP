@@ -83,6 +83,10 @@ func (b *Board) Outcome() Outcome {
     return b.outcome
 }
 
+func (b *Board) SetOutcome(o Outcome) {
+    b.outcome = o
+}
+
 func (b *Board) String(color Color) string {
     var sb strings.Builder
     sb.WriteByte('\n')

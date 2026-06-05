@@ -43,11 +43,12 @@ A networked chess game client in C++ and remote server in Go.
 | Server → Client   | `RJCT`             | Your move was invalid.             |
 | Server → Client   | `INVL`             | Unrecognized message format.       |
 | Server → Opponent | `MOVE <from> <to>` | Opponent's move.                   |
-| Server → Both     | `EOM: <reason>`    | Match ended.                       |
+| Client → Server   | `RSGN`             | Resign.                            |
+| Server → Both     | `EOM <reason>`     | Match ended.                       |
 
 > `<from>` and `<to>` both consist of one letter (a-h) and one number (1-8), e.g. "MOVE e2 e5".
 
-> `EOM: <reason>` is not a normal data message — it is the reason string of the WebSocket close frame the server sends when ending the match.
+> `EOM <reason>` is not a normal data message — it is the reason string of the WebSocket close frame the server sends when ending the match.
 > The `<reason>` payload is the string form of [`classical.Outcome`](server/chess/classical/outcome.go) — a `Result` and an optional `Termination`.
 
 > The server currently closes the connection upon receiving a message larger than 64 bytes.

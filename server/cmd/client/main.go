@@ -9,16 +9,8 @@ import (
     "sync"
 
     "github.com/aringq10/TCP/server/chess/classical"
+    "github.com/aringq10/TCP/server/msg"
     "github.com/gorilla/websocket"
-)
-
-const (
-    msgBlack   = "BLCK"
-    msgWhite   = "WHTE"
-    msgAccept  = "ACPT"
-    msgReject  = "RJCT"
-    msgMove    = "MOVE"
-    msgInvalid = "INVL"
 )
 
 type state struct {
@@ -113,24 +105,24 @@ func readLoop(conn *websocket.Conn, s *state, done chan struct{}) {
 func handleMessage(payload []byte, s *state) {
     tag := string(payload[:4])
     switch tag {
-    case msgBlack:
+    case msg.Black:
         s.setColor(classical.Black)
         fmt.Println("you are playing as Black")
         s.printBoard()
-    case msgWhite:
+    case msg.White:
         s.setColor(classical.White)
         fmt.Println("you are playing as White")
         s.printBoard()
-    case msgAccept:
+    case msg.Accept:
         m, _ := classical.ParseMove(s.color(), s.pendingMove)
         s.board.MakeMove(m)
         s.clearPending()
         fmt.Println("move accepted")
         s.printBoard()
-    case msgReject:
+    case msg.Reject:
         s.clearPending()
         fmt.Println("move rejected, try again")
-    case msgMove:
+    case msg.Move:
         if len(payload) < 10 {
             fmt.Println("received malformed MOVE message")
             return
@@ -140,7 +132,7 @@ func handleMessage(payload []byte, s *state) {
         s.board.MakeMove(m)
         fmt.Printf("opponent played: %s\n", moveStr)
         s.printBoard()
-    case msgInvalid:
+    case msg.Invalid:
         s.clearPending()
         fmt.Println("invalid move, use format e2e4")
     default:

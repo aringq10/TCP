@@ -6,18 +6,10 @@ import (
 
 	"github.com/aringq10/TCP/server/chess/classical"
 	"github.com/aringq10/TCP/server/conn"
+	"github.com/aringq10/TCP/server/msg"
 )
 
 const MAX_INVL = 5
-
-type Player struct {
-    Conn *conn.Conn
-    Color classical.Color
-}
-
-func NewPlayer(conn *conn.Conn, color classical.Color) *Player {
-    return &Player{Conn: conn, Color: color}
-}
 
 type Match struct {
     Board *classical.Board
@@ -34,7 +26,7 @@ func NewMatch(board *classical.Board, players ...*Player) *Match {
 
 func (m *Match) SendColors() {
     for _, p := range m.Players {
-        p.Conn.WriteString(p.Color.String())
+        p.WriteString(msg.MatchColor[p.Color])
     }
 }
 
@@ -43,7 +35,7 @@ func (m *Match) Broadcast(data []byte, excluded ...*Player) {
         if slices.Contains(excluded, p) {
             continue
         }
-        p.Conn.Write(data)
+        p.Write(data)
     }
 }
 
@@ -53,12 +45,12 @@ func (m *Match) End(reason string) {
     }
     m.ended = true
     for _, p := range m.Players {
-        p.Conn.Close("EOM: " + reason)
+        p.Conn.Close(msg.EndOfMatch + " " + reason)
     }
 }
 
 func (m *Match) HandleMessage(p *Player, data []byte) {
-    if p.Conn.SbsqINVL > MAX_INVL {
+    if p.SbsqINVL > MAX_INVL {
         m.End("Too many invalid messages from " + p.Color.String())
         return
     }
@@ -66,42 +58,51 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
     l := len(data)
 
     if l < 4 {
-        p.Conn.WriteINVL()
+        p.WriteINVL()
         return
     }
 
-    msg := string(data[:4])
+    message := string(data[:4])
 
-    switch msg {
-    case "MOVE":
+    switch message {
+    case msg.Move:
         if l != 10 {
-            p.Conn.WriteRJCT()
+            p.WriteRJCT()
             break
         }
 
         move, okMove := classical.ParseMove(p.Color, string(data[5:10]))
 
         if !okMove {
-            p.Conn.WriteRJCT()
+            p.WriteRJCT()
             return
         }
 
         if !m.Board.MakeMove(move) {
-            p.Conn.WriteRJCT()
+            p.WriteRJCT()
             return
         }
 
         log.Print(m.Board.String(classical.White))
 
-        p.Conn.WriteACPT()
+        p.WriteACPT()
         m.Broadcast(data[:10], p)
 
         if m.Board.IsOver() {
             m.End(m.Board.Outcome().String())
         }
 
+    case msg.Resign:
+        if l != 4 {
+            p.WriteINVL()
+            break
+        }
+
+        m.Board.SetOutcome(classical.NewOutcome(classical.Resignation, classical.OppositeColor(p.Color)))
+        m.End(m.Board.Outcome().String())
+
     default:
-        p.Conn.WriteINVL()
+        p.WriteINVL()
     }
 }
 

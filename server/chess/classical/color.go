@@ -8,8 +8,8 @@ const (
 )
 
 var colorNames = map[Color]string {
-    White: "WHTE",
-    Black: "BLCK",
+    White: "White",
+    Black: "Black",
 }
 
 func (c Color) String() string {
