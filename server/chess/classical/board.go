@@ -1,8 +1,9 @@
 package classical
 
 import (
-    "fmt"
-    "strings"
+	"fmt"
+	"slices"
+	"strings"
 )
 
 type Board struct {
@@ -82,12 +83,31 @@ func (b *Board) Outcome() Outcome {
     return b.outcome
 }
 
-func (b *Board) String() string {
+func (b *Board) String(color Color) string {
     var sb strings.Builder
     sb.WriteByte('\n')
-    for row := 7; row >= 0; row-- {
-        sb.WriteString(fmt.Sprintf("%d ", row+1))
-        for col := range 8 {
+
+    rows := make([]int, 8)
+    cols := make([]int, 8)
+    for i := range 8 {
+        rows[i] = i
+        cols[i] = i
+    }
+    if color == White {
+        slices.Reverse(rows)
+    } else {
+        slices.Reverse(cols)
+    }
+
+    letters := "    a b c d e f g h"
+    if color == Black {
+        letters = "    h g f e d c b a"
+    }
+
+    sb.WriteString("  ┌─────────────────┐\n")
+    for _, row := range rows {
+        sb.WriteString(fmt.Sprintf("%d │ ", row+1))
+        for _, col := range cols {
             if p := b.squares[row][col]; p != nil {
                 sb.WriteString(p.String())
             } else {
@@ -95,14 +115,15 @@ func (b *Board) String() string {
             }
             sb.WriteByte(' ')
         }
-        sb.WriteByte('\n')
+        sb.WriteString("│\n")
     }
-    sb.WriteString("  a b c d e f g h\n")
+    sb.WriteString("  └─────────────────┘\n")
+    sb.WriteString(letters + "\n")
     return sb.String()
 }
 
 func (b *Board) rotateTurn() {
-    b.whoseTurn = oppositeColor(b.whoseTurn)
+    b.whoseTurn = OppositeColor(b.whoseTurn)
 }
 
 
@@ -154,7 +175,7 @@ func (b *Board) isChecked(c Color) bool {
         return false
     }
 
-    return b.isAttacked(s, oppositeColor(c))
+    return b.isAttacked(s, OppositeColor(c))
 }
 
 func (b *Board) getValidMoves(from Square) []func() {

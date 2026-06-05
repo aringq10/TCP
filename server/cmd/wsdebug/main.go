@@ -48,13 +48,15 @@ func main() {
         }
     }()
 
-    scanner := bufio.NewScanner(os.Stdin)
-    for scanner.Scan() {
-        if err := conn.WriteMessage(websocket.TextMessage, scanner.Bytes()); err != nil {
-            log.Printf("write: %v", err)
-            break
+    go func() {
+        scanner := bufio.NewScanner(os.Stdin)
+        for scanner.Scan() {
+            if err := conn.WriteMessage(websocket.TextMessage, scanner.Bytes()); err != nil {
+                log.Printf("write: %v", err)
+                return
+            }
         }
-    }
+    }()
 
     <-done
 }

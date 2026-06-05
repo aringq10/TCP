@@ -74,25 +74,24 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
 
     switch msg {
     case "MOVE":
-        if l < 10 {
-            p.Conn.WriteINVL()
+        if l != 10 {
+            p.Conn.WriteRJCT()
             break
         }
 
-        from, okFrom := classical.ParseSquare(string(data[5:7]))
-        to,   okTo   := classical.ParseSquare(string(data[8:10]))
+        move, okMove := classical.ParseMove(p.Color, string(data[5:10]))
 
-        if !okFrom || !okTo {
+        if !okMove {
             p.Conn.WriteRJCT()
             return
         }
 
-        if !m.Board.MakeMove(classical.NewMove(p.Color, from, to)) {
+        if !m.Board.MakeMove(move) {
             p.Conn.WriteRJCT()
             return
         }
 
-        log.Print(m.Board.String())
+        log.Print(m.Board.String(classical.White))
 
         p.Conn.WriteACPT()
         m.Broadcast(data[:10], p)
@@ -117,7 +116,7 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
     blackP := NewPlayer(connBlack, classical.Black)
     m := NewMatch(classical.NewBoard(), whiteP, blackP)
 
-    log.Print(m.Board.String())
+    log.Print(m.Board.String(classical.White))
 
     m.SendColors()
     defer m.End("unexpected end of match")

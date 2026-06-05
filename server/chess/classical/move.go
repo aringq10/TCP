@@ -6,8 +6,19 @@ type Move struct {
     To Square
 }
 
-func NewMove(playerColor Color, from Square, to Square) Move {
-    return Move{PlayerColor: playerColor, From: from, To: to}
+func ParseMove(c Color, s string) (m Move, ok bool) {
+    if len(s) != 5 {
+        return m, false
+    }
+
+    from, ok1 := ParseSquare(s[0:2])
+    to, ok2 := ParseSquare(s[3:5])
+
+    if !ok1 || !ok2 || !c.Valid() {
+        return m, false
+    }
+
+    return Move{PlayerColor: c, From: from, To: to}, true
 }
 
 type Square struct {

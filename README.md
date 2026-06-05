@@ -29,24 +29,28 @@ A networked chess game client in C++ and remote server in Go.
 
 **`PREGAME`**
 
-| Direction         | Message |
-|-------------------|---------|
-| Server → Opponent | `WHTE`  |
-| Server → Opponent | `BLCK`  |
+| Direction         | Message | Meaning                            |
+|-------------------|---------|------------------------------------|
+| Server → Opponent | `WHTE`  | Match started, you're white.       |
+| Server → Opponent | `BLCK`  | Match started, you're black.       |
 
 **`IN GAME`**
 
-| Direction         | Message            |
-|-------------------|--------------------|
-| Client → Server   | `MOVE <from> <to>` |
-| Server → Client   | `ACPT`             |
-| Server → Client   | `RJCT`             |
-| Server → Opponent | `MOVE <from> <to>` |
-| Server → Both     | `EOM: <reason>`    |
+| Direction         | Message            | Meaning                            |
+|-------------------|--------------------|------------------------------------|
+| Client → Server   | `MOVE <from> <to>` | Your move.                         |
+| Server → Client   | `ACPT`             | Your move was valid.               |
+| Server → Client   | `RJCT`             | Your move was invalid.             |
+| Server → Client   | `INVL`             | Unrecognized message format.       |
+| Server → Opponent | `MOVE <from> <to>` | Opponent's move.                   |
+| Server → Both     | `EOM: <reason>`    | Match ended.                       |
+
 > `<from>` and `<to>` both consist of one letter (a-h) and one number (1-8), e.g. "MOVE e2 e5".
 
 > `EOM: <reason>` is not a normal data message — it is the reason string of the WebSocket close frame the server sends when ending the match.
 > The `<reason>` payload is the string form of [`classical.Outcome`](server/chess/classical/outcome.go) — a `Result` and an optional `Termination`.
+
+> The server currently closes the connection upon receiving a message larger than 64 bytes.
 
 > Will be expanded in the course of TP3.
 
