@@ -1,19 +1,23 @@
 package match
 
 import (
-    "github.com/aringq10/TCP/server/conn"
-    "github.com/aringq10/TCP/server/msg"
+	"time"
+
 	"github.com/aringq10/TCP/server/chess/classical"
+	"github.com/aringq10/TCP/server/conn"
+	"github.com/aringq10/TCP/server/msg"
 )
 
 type Player struct {
     Conn *conn.Conn
     SbsqINVL int // subsequent INVL message responses to Conn
     Color classical.Color
+    Timer *time.Timer
+    TimeRemaining time.Duration
 }
 
-func NewPlayer(conn *conn.Conn, color classical.Color) *Player {
-    return &Player{Conn: conn, Color: color}
+func NewPlayer(conn *conn.Conn, color classical.Color, timeRemaining time.Duration) *Player {
+    return &Player{Conn: conn, Color: color, TimeRemaining: timeRemaining}
 }
 
 func (p *Player) Write(data []byte) error {

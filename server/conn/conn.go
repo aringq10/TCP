@@ -2,7 +2,6 @@ package conn
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -87,11 +86,8 @@ func (c *Conn) ReadToChan() {
                 // client sent oversized message
             case websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway):
                 // expected disconnect
-            case websocket.IsUnexpectedCloseError(err):
-                // peer left abnormally — worth logging
             default:
-                // network / protocol error — also bail
-                log.Println("reading error:", err)
+                // network / protocol error
             }
             break
         }

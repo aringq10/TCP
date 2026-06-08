@@ -39,42 +39,6 @@ func placePawns(s *[8][8]Piece) {
     }
 }
 
-func (b *Board) MakeMove(m Move) bool {
-    if b.IsOver() {
-        return false
-    }
-
-    if m.PlayerColor != b.whoseTurn {
-        return false
-    }
-
-    piece := b.squares[m.From.Row][m.From.Col]
-    if piece == nil || piece.Color() != m.PlayerColor {
-        return false
-    }
-
-    exec, valid := piece.IsValidMove(b, m.From, m.To)
-    if !valid || exec == nil {
-        return false
-    }
-
-    snapshot := b.squares
-
-    exec()
-    if b.isChecked(piece.Color()) {
-        b.squares = snapshot
-        return false
-    }
-
-    b.lastMove = m
-    b.rotateTurn()
-
-    // Did this move end the game for the side now to move?
-    b.outcome = NewOutcome(b.terminationFor(b.whoseTurn), piece.Color())
-
-    return true
-}
-
 func (b *Board) IsOver() bool {
     return b.outcome.Result.IsOver()
 }
@@ -85,6 +49,10 @@ func (b *Board) Outcome() Outcome {
 
 func (b *Board) SetOutcome(o Outcome) {
     b.outcome = o
+}
+
+func (b *Board) WhoseTurn() Color {
+    return b.whoseTurn
 }
 
 func (b *Board) String(color Color) string {
@@ -126,10 +94,45 @@ func (b *Board) String(color Color) string {
     return sb.String()
 }
 
+func (b *Board) MakeMove(m Move) bool {
+    if b.IsOver() {
+        return false
+    }
+
+    if m.PlayerColor != b.whoseTurn {
+        return false
+    }
+
+    piece := b.squares[m.From.Row][m.From.Col]
+    if piece == nil || piece.Color() != m.PlayerColor {
+        return false
+    }
+
+    exec, valid := piece.IsValidMove(b, m.From, m.To)
+    if !valid || exec == nil {
+        return false
+    }
+
+    snapshot := b.squares
+
+    exec()
+    if b.isChecked(piece.Color()) {
+        b.squares = snapshot
+        return false
+    }
+
+    b.lastMove = m
+    b.rotateTurn()
+
+    // Did this move end the game for the side now to move?
+    b.outcome = NewOutcome(b.terminationFor(b.whoseTurn), piece.Color())
+
+    return true
+}
+
 func (b *Board) rotateTurn() {
     b.whoseTurn = OppositeColor(b.whoseTurn)
 }
-
 
 func (b *Board) isAttacked(s Square, by Color) bool {
     attacked := b.squares[s.Row][s.Col]
