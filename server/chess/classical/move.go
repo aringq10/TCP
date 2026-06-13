@@ -1,24 +1,49 @@
 package classical
 
+type Promotion int
+
+const (
+    NoPromotion Promotion = iota
+    ToQueen
+    ToRook
+    ToBishop
+    ToKnight
+)
+
+var charToPromotion = map[rune]Promotion {
+    '-': NoPromotion,
+    'Q': ToQueen,
+    'R': ToRook,
+    'B': ToBishop,
+    'N': ToKnight,
+}
+
 type Move struct {
-    PlayerColor Color
+    Color Color
     From Square
     To Square
+    Promotion Promotion
+}
+
+func (m Move) IsPromotion() bool {
+    return m.Promotion != NoPromotion
 }
 
 func ParseMove(c Color, s string) (m Move, ok bool) {
-    if len(s) != 5 {
+    if len(s) != 7 {
         return m, false
     }
 
-    from, ok1 := ParseSquare(s[0:2])
-    to, ok2 := ParseSquare(s[3:5])
+    from, okFrom := ParseSquare(s[0:2])
+    to, okTo := ParseSquare(s[3:5])
 
-    if !ok1 || !ok2 || !c.Valid() {
-        return m, false
+    if okFrom && okTo && s[5] == ' ' {
+        if p, okPromo := charToPromotion[rune(s[6])]; okPromo {
+            return Move{Color: c, From: from, To: to, Promotion: p}, true
+        }
     }
 
-    return Move{PlayerColor: c, From: from, To: to}, true
+    return m, false
 }
 
 type Square struct {

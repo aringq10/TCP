@@ -105,20 +105,12 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
         winner := classical.OppositeColor(p.Color)
         m.End(Resignation(winner))
     case msg.Move:
-        if l != 10 {
-            p.WriteRJCT()
+        if l != 12 {
+            p.WriteINVL()
             break
         }
 
-        moveString := string(data[5:10])
-        move, okMove := classical.ParseMove(p.Color, moveString)
-
-        if !okMove {
-            p.WriteRJCT()
-            return
-        }
-
-        if !m.Board.MakeMove(move) {
+        if !m.Board.MakeMove(p.Color, string(data[5:12])) {
             p.WriteRJCT()
             return
         }
@@ -126,7 +118,7 @@ func (m *Match) HandleMessage(p *Player, data []byte) {
         m.RotateTimeRemaining(p)
 
         p.WriteACPT()
-        m.Broadcast(data[:10], p)
+        m.Broadcast(data[:12], p)
 
         log.Print(m.Board.String(classical.White))
 

@@ -19,8 +19,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Printf("WS: connection from %s, total %d", r.RemoteAddr, conn.Conns.Count())
-
     go c.ReadToChan()
 
     if p1, p2, ok := conn.Conns.TryDequeue2(); ok {

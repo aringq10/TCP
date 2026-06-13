@@ -94,23 +94,49 @@ func (b *Board) String(color Color) string {
     return sb.String()
 }
 
-func (b *Board) MakeMove(m Move) bool {
+func (b *Board) MakeMove(c Color, s string) bool {
     if b.IsOver() {
         return false
     }
 
-    if m.PlayerColor != b.whoseTurn {
+    m, okMove := ParseMove(c, s)
+    if !okMove {
+        return false
+    }
+
+    if m.Color != b.whoseTurn {
         return false
     }
 
     piece := b.squares[m.From.Row][m.From.Col]
-    if piece == nil || piece.Color() != m.PlayerColor {
+    if piece == nil || piece.Color() != m.Color {
         return false
     }
 
     exec, valid := piece.IsValidMove(b, m.From, m.To)
     if !valid || exec == nil {
         return false
+    }
+
+    _, isPawn := piece.(*Pawn)
+    backRank := 7
+    if m.Color == Black {
+        backRank = 0
+    }
+    landsLast := isPawn && m.To.Row == backRank
+
+    // A move is a promotion iff a pawn reaches the back rank. Reject a promotion
+    // flag on any other move, and a pawn reaching the back rank without one.
+    if landsLast != m.IsPromotion() {
+        return false
+    }
+
+    if landsLast {
+        base := exec
+        exec = func() {
+            base()
+            b.squares[m.To.Row][m.To.Col] = getPromotionPiece(m.Promotion, m.Color)
+        }
     }
 
     snapshot := b.squares
@@ -128,6 +154,21 @@ func (b *Board) MakeMove(m Move) bool {
     b.outcome = NewOutcome(b.terminationFor(b.whoseTurn), piece.Color())
 
     return true
+}
+
+func getPromotionPiece(p Promotion, c Color) Piece {
+    switch p {
+    case ToQueen:
+        return NewQueen(c)
+    case ToRook:
+        return NewRook(c)
+    case ToBishop:
+        return NewBishop(c)
+    case ToKnight:
+        return NewKnight(c)
+    default:
+        return nil
+    }
 }
 
 func (b *Board) rotateTurn() {
@@ -185,6 +226,7 @@ func (b *Board) isChecked(c Color) bool {
     return b.isAttacked(s, OppositeColor(c))
 }
 
+// Doesn't generate pawn promotions, as it's only used for check-escape detection.
 func (b *Board) getValidMoves(from Square) []func() {
     piece := b.squares[from.Row][from.Col]
     if piece == nil {

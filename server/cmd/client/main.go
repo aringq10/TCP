@@ -114,8 +114,7 @@ func handleMessage(payload []byte, s *state) {
         fmt.Println("you are playing as White")
         s.printBoard()
     case msg.Accept:
-        m, _ := classical.ParseMove(s.color(), s.pendingMove)
-        s.board.MakeMove(m)
+        s.board.MakeMove(s.color(), s.pendingMove)
         s.clearPending()
         fmt.Println("move accepted")
         s.printBoard()
@@ -128,13 +127,12 @@ func handleMessage(payload []byte, s *state) {
             return
         }
         moveStr := string(payload[5:10])
-        m, _ := classical.ParseMove(classical.OppositeColor(s.color()), moveStr)
-        s.board.MakeMove(m)
+        s.board.MakeMove(classical.OppositeColor(s.color()), moveStr)
         fmt.Printf("opponent played: %s\n", moveStr)
         s.printBoard()
     case msg.Invalid:
         s.clearPending()
-        fmt.Println("invalid move, use format e2e4")
+        fmt.Println("invalid move, use format e2 e4 -")
     default:
         fmt.Printf("received unknown message: %q\n", payload)
     }
