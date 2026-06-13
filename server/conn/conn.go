@@ -35,7 +35,7 @@ func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
     c := &Conn{WsConn: wsConn, OutCh: make(chan []byte), MatchStartCh: make(chan struct{})}
 
     if Conns.Count() >= QUEUE_LIMIT {
-        c.Close("queue is full")
+        c.Close()
         return nil, errors.New("connection ended: queue is full")
     }
 
@@ -46,23 +46,14 @@ func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
     return c, nil
 }
 
-func (c *Conn) Close(reason string) error {
-    var errors []error
-    errors = append(errors,
-        c.WsConn.WriteMessage(
-            websocket.CloseMessage,
-            websocket.FormatCloseMessage(websocket.CloseNormalClosure, reason),
-        ),
-        c.WsConn.Close(),
+func (c *Conn) Close() error {
+    writeErr := c.WsConn.WriteMessage(
+        websocket.CloseMessage,
+        websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
     )
+    closeErr := c.WsConn.Close()
 
-    for _, e := range errors {
-        if e != nil {
-            return e
-        }
-    }
-
-    return nil
+    return errors.Join(writeErr, closeErr)
 }
 
 func (c *Conn) Write(data []byte) error {

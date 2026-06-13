@@ -14,6 +14,16 @@ func setupBoard(place map[string]Piece, turn Color) *Board {
     return &b
 }
 
+// makeMove parses s and plays it, mirroring the match layer's parse-then-apply.
+// A parse failure counts as a rejected move.
+func makeMove(b *Board, c Color, s string) bool {
+    m, ok := ParseMove(c, s)
+    if !ok {
+        return false
+    }
+    return b.MakeMove(m)
+}
+
 func TestMakeMovePromotion(t *testing.T) {
     cases := []struct {
         name      string
@@ -89,7 +99,7 @@ func TestMakeMovePromotion(t *testing.T) {
         t.Run(tc.name, func(t *testing.T) {
             b := setupBoard(tc.place, tc.turn)
 
-            if got := b.MakeMove(tc.turn, tc.move); got != tc.wantOK {
+            if got := makeMove(b, tc.turn, tc.move); got != tc.wantOK {
                 t.Fatalf("MakeMove(%q) = %v, want %v", tc.move, got, tc.wantOK)
             }
             if !tc.wantOK {
@@ -126,7 +136,7 @@ func TestMakeMovePromotionIntoCheckRejected(t *testing.T) {
         "h7": NewRook(Black),
     }, White)
 
-    if b.MakeMove(White, "b7 b8 Q") {
+    if makeMove(b, White, "b7 b8 Q") {
         t.Fatal("promotion exposing own king was accepted")
     }
 
@@ -148,7 +158,7 @@ func TestMakeMovePromotionDeliversCheckmate(t *testing.T) {
         "g7": NewPawn(White),
     }, White)
 
-    if !b.MakeMove(White, "g7 g8 Q") {
+    if !makeMove(b, White, "g7 g8 Q") {
         t.Fatal("promotion delivering checkmate was rejected")
     }
     if !b.IsOver() {

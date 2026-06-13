@@ -27,26 +27,34 @@ A networked chess game client in C++ and remote server in Go.
 - **Direction** — who sends the message to whom. S - server, C - client.
 - **Message** — the wire format of the message.
 
+`<wt>` - how much time white has left in seconds. Floating point, 3 decimal places of precision, e.g. `6.123`.
+`<bt>` - same as `<wt>` but for black.
+`<from>`, `<to>` - squares from where to where you want to move. Consists of one letter (a-h) and one number (1-8), e.g. `a2`, `e5`.
+`<promotion>` - expresses pawn promotion and can take one of the following values: `-` (none), `Q` (Queen), `R` (Rook), `B` (Bishop), `N` (Knight).
+`<reason>` - end of match reason, the string form of [`classical.Outcome`](server/chess/classical/outcome.go).
+
 **`PREGAME`**
 
-| Direction | Message                       | Meaning                      | Notes                                                                                                                                                                                |
-| --------- | ----------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| S→C       | `WHTE <your_time> <opp_time>` | Match started, you're white. | `<your_time>` and `<opp_time>` show how much time you and your opponent have left in seconds. The format is a floating-point value with 3 decimal places of precision, e.g. `6.123`. |
-| S→C       | `BLCK <your_time> <opp_time>` | Match started, you're black. | See `WHTE`.                                                                                                                                                                          |
+| Direction | Message          | Meaning                      |
+| --------- | ---------------- | ---------------------------- |
+| S→C       | `WHTE <wt> <bt>` | Match started, you're white. |
+| S→C       | `BLCK <wt> <bt>` | Match started, you're black. |
 
 **`IN GAME`**
 
-| Direction | Message                                               | Meaning                      | Notes                                                                                                                                                                                                                                         |
-| --------- | ----------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C→S       | `MOVE <from> <to> <promotion>`                        | Your move.                   | `<from>` and `<to>` both consist of one letter (a-h) and one number (1-8), e.g. `a2`, `e5`. `<promotion>` expresses pawn promotion and can take one of the following values: `-` (none), `Q` (Queen), `R` (Rook), `B` (Bishop), `N` (Knight). |
-| S→C       | `ACPT`                                                | Your move was valid.         |                                                                                                                                                                                                                                               |
-| S→C       | `RJCT`                                                | Your move was invalid.       |                                                                                                                                                                                                                                               |
-| S→C       | `MOVE <from> <to> <promotion> <your_time> <opp_time>` | Opponent's move.             | See `MOVE` (C→S) and `WHTE`.                                                                                                                                                                                                                  |
-| S→C       | `INVL`                                                | Unrecognized message format. |                                                                                                                                                                                                                                               |
-| C→S       | `RSGN`                                                | Resign.                      |                                                                                                                                                                                                                                               |
-| S→C       | `EOM <reason>`                                        | Match ended.                 | This is not a normal data message - it is the reason string of the WebSocket close frame.  The `<reason>` payload is the string form of [`classical.Outcome`](server/chess/classical/outcome.go), or a custom string if outcome is unknown.   |
+| Direction | Message                                  | Meaning                      |
+| --------- | ---------------------------------------- | ---------------------------- |
+| C→S       | `MOVE <from> <to> <promotion>`           | Your move.                   |
+| S→C       | `ACPT <wt> <bt>`                         | Your move was valid.         |
+| S→C       | `RJCT <wt> <bt>`                         | Your move was invalid.       |
+| S→C       | `MOVE <from> <to> <promotion> <wt> <bt>` | Opponent's move.             |
+| S→C       | `INVL`                                   | Unrecognized message format. |
+| C→S       | `RSGN`                                   | Resign.                      |
+| S→C       | `ENDM <reason>`                          | Match ended.                 |
 
-> The server currently closes the connection upon receiving a message larger than 64 bytes.
+> The server currently closes the connection for the following reasons:
+> Receives a message larger than 64 bytes.
+> Receives too many messages to which it responded with `INVL`. 
 
 ## License
 

@@ -94,13 +94,8 @@ func (b *Board) String(color Color) string {
     return sb.String()
 }
 
-func (b *Board) MakeMove(c Color, s string) bool {
+func (b *Board) MakeMove(m Move) bool {
     if b.IsOver() {
-        return false
-    }
-
-    m, okMove := ParseMove(c, s)
-    if !okMove {
         return false
     }
 

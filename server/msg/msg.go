@@ -12,7 +12,7 @@ const (
     Move       = "MOVE"
     Invalid    = "INVL"
     Resign     = "RSGN"
-    EndOfMatch = "EOM"
+    EndOfMatch = "ENDM"
 )
 
 var MatchColor = map[classical.Color]string {
