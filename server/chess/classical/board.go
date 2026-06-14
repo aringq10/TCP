@@ -142,6 +142,7 @@ func (b *Board) MakeMove(m Move) bool {
         return false
     }
 
+    piece.IncMoveCount()
     b.lastMove = m
     b.rotateTurn()
 
@@ -172,10 +173,7 @@ func (b *Board) rotateTurn() {
 
 func (b *Board) isAttacked(s Square, by Color) bool {
     attacked := b.squares[s.Row][s.Col]
-    if attacked == nil {
-        return false
-    }
-    if attacked.Color() == by {
+    if attacked != nil && attacked.Color() == by {
         return false
     }
 
