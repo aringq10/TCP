@@ -12,6 +12,7 @@ import (
 
 // Disqualify a player after this many invalid messages in a row.
 const MAX_INVL = 6
+// Set to a negative value for no time limit
 const MATCH_DURATION = 120 * time.Second
 const White = classical.White
 const Black = classical.Black
@@ -79,7 +80,15 @@ func (m *Match) sendEndOfMatch(reason string) {
     m.black.Conn.Close()
 }
 
+func (m *Match) noTimeLimit() bool {
+    return m.matchDuration < 0
+}
+
 func (m *Match) timeRemainingFor(c classical.Color) time.Duration {
+    if m.noTimeLimit() {
+        return 0.0
+    }
+
     me, opp := m.getPlayers(c)
     if c != m.board.WhoseTurn() {
         return me.TimeRemaining
@@ -91,6 +100,10 @@ func (m *Match) timeRemainingFor(c classical.Color) time.Duration {
 }
 
 func (m *Match) UpdateTimers() {
+    if m.noTimeLimit() {
+        return
+    }
+
     // currPlayer is whose turn just started.
     // We need to update the previous player's remaining time.
     currPlayer, prevPlayer := m.getPlayers(m.board.WhoseTurn())
@@ -174,6 +187,9 @@ func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
     m.black.Timer = time.NewTimer(MATCH_DURATION)
     m.black.Timer.Stop()
     m.white.Timer = time.NewTimer(MATCH_DURATION)
+    if m.noTimeLimit() {
+        m.white.Timer.Stop()
+    }
 
     log.Print(m.board.String(classical.White))
 
