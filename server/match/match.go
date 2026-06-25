@@ -1,123 +1,254 @@
 package match
 
 import (
+	"fmt"
 	"log"
+	"time"
 
-	"github.com/aringq10/TCP/server/chess"
+	"github.com/aringq10/TCP/server/chess/classical"
 	"github.com/aringq10/TCP/server/conn"
+	"github.com/aringq10/TCP/server/msg"
 )
 
-const MAX_INVL = 5
-
-type Player struct {
-    Conn *conn.Conn
-    Color chess.Color
-}
+// Disqualify a player after this many invalid messages in a row.
+const MAX_INVL = 6
+// Set to a negative value for no time limit
+const MATCH_DURATION = 120 * time.Second
+const White = classical.White
+const Black = classical.Black
 
 type Match struct {
-    Board *chess.Board
-    Players []Player
-    WhoseTurn chess.Color
-    endSignal chan string
+    board *classical.Board
+    white *Player
+    black *Player
+    startOfMatch time.Time
+    matchDuration time.Duration
+    ended bool
 }
 
-func (m *Match) SendColors() {
-    for _, p := range m.Players {
-        p.Conn.WriteString(p.Color.String())
+func NewMatch(
+    board *classical.Board,
+    white *Player,
+    black *Player,
+    startOfMatch time.Time,
+    matchDuration time.Duration,
+) *Match {
+    return &Match{
+        board: board,
+        white: white,
+        black: black,
+        startOfMatch: startOfMatch,
+        matchDuration: matchDuration,
     }
 }
 
-func (m *Match) SignalEnd(reason string) {
-    m.endSignal <- reason
+func (m *Match) sendColors() {
+    m.white.Write(msg.MatchColor[White] + m.getTimers())
+    m.black.Write(msg.MatchColor[Black] + m.getTimers())
 }
 
-func (m *Match) End(reason string) {
-    for _, p := range m.Players {
-        p.Conn.Close("EOM: " + reason)
+func (m *Match) sendInvalid(p *Player) {
+    p.SbsqINVL++
+    p.Write(msg.Invalid)
+    if p.SbsqINVL >= MAX_INVL {
+        m.sendEndOfMatch(disqualification(classical.OppositeColor(p.Color)))
     }
 }
 
-func (m *Match) NextTurn() {
-    if m.WhoseTurn == chess.WHITE {
-        m.WhoseTurn = chess.BLACK
-    } else {
-        m.WhoseTurn = chess.WHITE
+func (m *Match) sendReject(p *Player) {
+    p.SbsqINVL = 0
+    p.Write(msg.Reject + m.getTimers())
+}
+
+func (m *Match) sendAccept(p *Player) {
+    p.SbsqINVL = 0
+    p.Write(msg.Accept + m.getTimers())
+}
+
+func (m *Match) sendMove(p *Player, moveString string) {
+    p.Write(msg.Move + " " + moveString + m.getTimers())
+}
+
+func (m *Match) sendEndOfMatch(reason string) {
+    if m.ended {
+        return
     }
+    m.ended = true
+    m.white.Write(msg.EndOfMatch + " " + reason)
+    m.black.Write(msg.EndOfMatch + " " + reason)
+    m.white.Conn.Close()
+    m.black.Conn.Close()
+}
+
+func (m *Match) noTimeLimit() bool {
+    return m.matchDuration < 0
+}
+
+func (m *Match) timeRemainingFor(c classical.Color) time.Duration {
+    if m.noTimeLimit() {
+        return 0.0
+    }
+
+    me, opp := m.getPlayers(c)
+    if c != m.board.WhoseTurn() {
+        return me.TimeRemaining
+    }
+
+    timeElapsed := time.Since(m.startOfMatch)
+    totalTime := 2 * m.matchDuration
+    return totalTime - timeElapsed - opp.TimeRemaining
+}
+
+func (m *Match) UpdateTimers() {
+    if m.noTimeLimit() {
+        return
+    }
+
+    // currPlayer is whose turn just started.
+    // We need to update the previous player's remaining time.
+    currPlayer, prevPlayer := m.getPlayers(m.board.WhoseTurn())
+    prevPlayer.Timer.Stop()
+    currPlayer.Timer.Reset(currPlayer.TimeRemaining)
+
+    timeElapsed := time.Since(m.startOfMatch)
+    totalTime := 2 * m.matchDuration
+    prevPlayer.TimeRemaining = totalTime - timeElapsed - currPlayer.TimeRemaining
 }
 
 func (m *Match) HandleMessage(p *Player, data []byte) {
-    if p.Conn.SbsqInvl > MAX_INVL {
-        m.SignalEnd("Too many invalid messages from " + p.Color.String())
-        return
-    }
-    if len(data) < 4 {
-        p.Conn.WriteInvl()
+    l := len(data)
+
+    if l < 4 {
+        m.sendInvalid(p)
         return
     }
 
-    msg := string(data[:4])
+    message := string(data[:4])
 
-    switch msg {
-    case "MOVE":
-        if len(data) < 10 {
-            p.Conn.WriteInvl()
-            break
+    switch message {
+    case msg.Resign:
+        if l != 4 {
+            m.sendInvalid(p)
+            return
         }
 
-        from := string(data[5:7])
-        to := string(data[8:10])
+        winner := classical.OppositeColor(p.Color)
+        m.sendEndOfMatch(resignation(winner))
+    case msg.Move:
+        if l != 12 {
+            m.sendInvalid(p)
+            return
+        }
 
-        if p.Color == m.WhoseTurn && m.Board.MakeMove(p.Color, from, to) {
-            log.Print(m.Board.String())
-            m.NextTurn()
-            p.Conn.WriteString("ACPT")
-            for _, opp := range m.Players {
-                if opp != *p {
-                    opp.Conn.Write(data[:10])
-                }
-            }
-        } else {
-            p.Conn.WriteString("RJCT")
+        moveString := string(data[5:12])
+        move, okMove := classical.ParseMove(p.Color, moveString)
+        if !okMove {
+            m.sendInvalid(p)
+            return
+        }
+
+        if !m.board.MakeMove(move) {
+            m.sendReject(p)
+            return
+        }
+
+        opp := m.getPlayer(classical.OppositeColor(p.Color))
+        m.UpdateTimers()
+        m.sendAccept(p)
+        m.sendMove(opp, moveString)
+
+        log.Print(m.board.String(classical.White))
+
+        if m.board.IsOver() {
+            m.sendEndOfMatch(m.board.Outcome().String())
         }
     default:
-        p.Conn.WriteInvl()
+        m.sendInvalid(p)
     }
 }
 
 func HandleMatch(connWhite *conn.Conn, connBlack *conn.Conn) {
-    log.Println("Match: started", connWhite.WsConn.RemoteAddr(), connBlack.WsConn.RemoteAddr())
-    defer log.Println("Match: ended", connWhite.WsConn.RemoteAddr(), connBlack.WsConn.RemoteAddr())
+    whAddr := connWhite.WsConn.RemoteAddr()
+    blAddr := connBlack.WsConn.RemoteAddr()
+    log.Println("MATCH STARTED", whAddr, blAddr)
+    defer log.Println("MATCH ENDED", whAddr, blAddr)
 
-    // Signal that that match has started, stop discarding messages
-    connWhite.DoneCh <- struct{}{}
-    connBlack.DoneCh <- struct{}{}
+    pw := NewPlayer(connWhite, White, MATCH_DURATION)
+    pb := NewPlayer(connBlack, Black, MATCH_DURATION)
+    m := NewMatch(classical.NewBoard(), pw, pb, time.Now(), MATCH_DURATION)
 
-    var m Match
-    m.Board = chess.NewBoard()
-    m.WhoseTurn = chess.WHITE
-    m.Players = []Player{
-        {connWhite, chess.WHITE},
-        {connBlack, chess.BLACK},
+    m.white.Conn.SignalMatchStart()
+    m.black.Conn.SignalMatchStart()
+
+    m.sendColors()
+
+    // Immediately stop black's timer so it doesn't fire before white's.
+    // We need to create it here since select can't take a nil Timer.
+    m.black.Timer = time.NewTimer(MATCH_DURATION)
+    m.black.Timer.Stop()
+    m.white.Timer = time.NewTimer(MATCH_DURATION)
+    if m.noTimeLimit() {
+        m.white.Timer.Stop()
     }
 
-    m.SendColors()
+    log.Print(m.board.String(classical.White))
 
     for {
         select {
-        case data, ok := <-connWhite.OutCh:
+        case data, ok := <-m.white.Conn.OutCh:
             if !ok {
-                m.SignalEnd(m.Players[0].Color.String() + " disconnected")
+                m.sendEndOfMatch(abandonment(Black))
                 return
             }
-            m.HandleMessage(&m.Players[0], data)
-        case data, ok := <-connBlack.OutCh:
+            m.HandleMessage(m.white, data)
+        case data, ok := <-m.black.Conn.OutCh:
             if !ok {
-                m.SignalEnd(m.Players[1].Color.String() + " disconnected")
+                m.sendEndOfMatch(abandonment(White))
                 return
             }
-            m.HandleMessage(&m.Players[1], data)
-        case reason := <-m.endSignal:
-            m.End(reason)
+            m.HandleMessage(m.black, data)
+        case <-m.white.Timer.C:
+            m.sendEndOfMatch(timeForfeit(Black))
+            return
+        case <-m.black.Timer.C:
+            m.sendEndOfMatch(timeForfeit(White))
+            return
         }
     }
+}
+
+func resignation(winner classical.Color) string {
+    return classical.NewOutcome(classical.Resignation, winner).String()
+}
+
+func timeForfeit(winner classical.Color) string {
+    return classical.NewOutcome(classical.TimeForfeit, winner).String()
+}
+
+func abandonment(winner classical.Color) string {
+    return classical.NewOutcome(classical.Abandonment, winner).String()
+}
+
+func disqualification(winner classical.Color) string {
+    return classical.NewOutcome(classical.Disqualification, winner).String()
+}
+
+func (m *Match) getPlayers(yourColor classical.Color) (you *Player, opp *Player) {
+    if yourColor == White {
+        return m.white, m.black
+    } else {
+        return m.black, m.white
+    }
+}
+
+func (m *Match) getPlayer(c classical.Color) *Player {
+    if c == White {
+        return m.white
+    } else {
+        return m.black
+    }
+}
+
+func (m *Match) getTimers() string {
+    return fmt.Sprintf(" %.3f %.3f", m.timeRemainingFor(White).Seconds(), m.timeRemainingFor(Black).Seconds())
 }

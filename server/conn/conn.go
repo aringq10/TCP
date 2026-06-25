@@ -2,7 +2,6 @@ package conn
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -23,9 +22,8 @@ var upgrader = websocket.Upgrader{
 
 type Conn struct {
     WsConn *websocket.Conn
-    SbsqInvl int // subsequent INVL message responses to WsConn
     OutCh chan []byte
-    DoneCh chan struct{}
+    MatchStartCh chan struct{}
 }
 
 func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
@@ -34,10 +32,10 @@ func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
         return nil, errors.New("upgrade failed:" + err.Error())
     }
 
-    c := &Conn{WsConn: wsConn, OutCh: make(chan []byte), DoneCh: make(chan struct{})}
+    c := &Conn{WsConn: wsConn, OutCh: make(chan []byte), MatchStartCh: make(chan struct{})}
 
     if Conns.Count() >= QUEUE_LIMIT {
-        c.Close("queue is full")
+        c.Close()
         return nil, errors.New("connection ended: queue is full")
     }
 
@@ -48,52 +46,40 @@ func SetupConn(w http.ResponseWriter, r *http.Request) (*Conn, error) {
     return c, nil
 }
 
+func (c *Conn) Close() error {
+    writeErr := c.WsConn.WriteMessage(
+        websocket.CloseMessage,
+        websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+    )
+    closeErr := c.WsConn.Close()
+
+    return errors.Join(writeErr, closeErr)
+}
+
 func (c *Conn) Write(data []byte) error {
-    if string(data) == "INVL" {
-        c.SbsqInvl++
-    } else {
-        c.SbsqInvl = 0
-    }
     return c.WsConn.WriteMessage(websocket.TextMessage, data)
-}
-
-func (c *Conn) WriteString(data string) error {
-    return c.Write([]byte(data))
-}
-
-func (c *Conn) WriteInvl() error {
-    return c.WriteString("INVL")
 }
 
 func (c *Conn) Read() (messageType int, data []byte, err error) {
     return c.WsConn.ReadMessage()
 }
 
-func (c *Conn) Close(reason string) error {
-    var errors []error
-    errors = append(errors,
-        c.WriteString(reason),
-        c.WsConn.WriteMessage(
-            websocket.CloseMessage,
-            websocket.FormatCloseMessage(websocket.CloseNormalClosure, reason),
-        ),
-        c.WsConn.Close(),
-    )
-
-    for _, e := range errors {
-        if e != nil {
-            return e
-        }
-    }
-
-    return nil
+func (c *Conn) SignalMatchStart() {
+    c.MatchStartCh <- struct{}{}
 }
 
 func (c *Conn) ReadToChan() {
     for {
         _, data, err := c.Read()
         if err != nil {
-            log.Println("reading error:", err)
+            switch {
+            case errors.Is(err, websocket.ErrReadLimit):
+                // client sent oversized message
+            case websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway):
+                // expected disconnect
+            default:
+                // network / protocol error
+            }
             break
         }
         c.OutCh <- data
