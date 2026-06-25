@@ -24,22 +24,19 @@ int main(int argc, char** argv) {
     ChessBoardUI ui(tileSize);
 
     auto handle_event = [&](Event e) {
-        std::cout << "Handler called" << std::endl;
         switch (e.type) {
         case OPPONENT_MOVE:
-            std::cout << "Opponent move event received" << std::endl;
-            std::cout << e.received_message << std::endl;
+            std::cout << "OPPONENT MOVED: " << e.received_message << std::endl;
             board.makeOppMove(e.from, e.to);
             break;
 
         case MOVE_ACCEPTED:
-            std::cout << "Move accepted" << std::endl;
+            std::cout << "MOVE ACCEPTED" << std::endl;
             break;
 
         case MOVE_REJECTED:
             board.undoLastMove();
             std::cout << "MOVE REJECTED" << std::endl;
-            std::cout << "MOVE REVERTED LOCALLY" << std::endl;
             break;
 
         case INVALID:
@@ -55,6 +52,14 @@ int main(int argc, char** argv) {
             std::cout << "You are playing as BLACK" << std::endl;
             board.setColor(Color::BLACK);
             ui.setFlipped(true);
+            break;
+
+        case MATCH_ENDED:
+            std::cout << "Match has ended: " << e.reason << std::endl;
+            break;
+
+        case DISCONNECTED:
+            std::cout << "Connection to server closed" << std::endl;
             break;
 
         default:
