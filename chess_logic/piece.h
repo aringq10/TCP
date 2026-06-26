@@ -16,6 +16,7 @@ class ChessPiece {
 protected:
     Color color;
     PieceType type;
+    bool moved = false;
 
 public:
     ChessPiece(Color c, PieceType t) : color(c), type(t) {}
@@ -23,6 +24,9 @@ public:
 
     Color getColor() const { return color; }
     PieceType getType() const { return type; }
+
+    bool hasMoved() const { return moved; }
+    void setMoved(bool m) { moved = m; }
 
     Piece toEnum() const {
         if (type == PieceType::PAWN) {

@@ -12,9 +12,23 @@ private:
     Color myColor;
     Color whoseTurn;
 
-    int lastFromX, lastFromY, lastToX, lastToY;
-    ChessPiece* capturedPieceHistory;
-    bool hasMoveToUndo;
+    // Square a pawn may move onto to capture en passant (-1 if none),
+    // i.e. the square skipped by the last double pawn push.
+    int enPassantX, enPassantY;
+
+    // Everything needed to reverse the last local move (used on server reject).
+    struct Undo {
+        bool valid = false;
+        int fromX, fromY, toX, toY;
+        ChessPiece* captured = nullptr; // captured piece (nullptr if none)
+        int capturedX, capturedY;       // its square (differs from `to` on en passant)
+        bool moverMovedBefore = false;  // mover's hasMoved() before the move
+        bool isCastle = false;
+        int rookFromX, rookFromY, rookToX, rookToY;
+        bool rookMovedBefore = false;
+        int enPassantXBefore, enPassantYBefore;
+    };
+    Undo undo;
 
     bool isInsideBoard(int x, int y) const;
     bool parseCoordinate(std::string coord, int &x, int &y);
@@ -32,7 +46,10 @@ public:
     void setColor(Color c);
     bool undoLastMove();
     
-    ChessPiece* getPieceAt(int x, int y) const; 
+    ChessPiece* getPieceAt(int x, int y) const;
 
-    const Piece (&getBoard() const)[8][8]; 
+    int getEnPassantTargetX() const { return enPassantX; }
+    int getEnPassantTargetY() const { return enPassantY; }
+
+    const Piece (&getBoard() const)[8][8];
 };
