@@ -1,181 +1,168 @@
 #include "board.h"
-#include <string>
+#include "knight.h"
+#include "pawn.h"
+#include "rook.h"
+#include "bishop.h"
+#include "queen.h"
+#include "king.h"
 
-Board::Board() {
-    Piece startingBoard[8][8] = {
-        {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY},
-        {BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN, BLACK_PAWN},
-        {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY},
-        {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY},
-        {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY},
-        {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY},
-        {WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN, WHITE_PAWN},
-        {EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY,      EMPTY}
-    };
-
-    whoseTurn = Color::WHITE;
-
-    for(int y = 0; y < 8; y++)
-        for(int x = 0; x < 8; x++)
-            board[y][x] = startingBoard[y][x];
-    
-}
-
-bool Board::isInsideBoard(int x, int y) {
-    return x >= 0 && x < 8 &&
-        y >= 0 && y < 8;
-}
-
-bool Board::isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece) {
-    Piece targetPiece = board[toY][toX];
-
-    if (piece == EMPTY) {
-        return false;
-    }
-    if (piece > 6 && targetPiece > 6) {
-        return false;
-    }
-    if (piece < 7 && targetPiece < 7 && targetPiece != EMPTY) {
-        return false;
-    }
-
-    int dir = 0;
-    int startRow = 0;
-
-    if(piece == WHITE_PAWN) {
-        dir = -1;
-        startRow = 6;
-    }
-    else if(piece == BLACK_PAWN) {
-        dir = +1;
-        startRow = 1;
-    }
-
-    int diffY = toY - fromY;
-    int diffX = toX - fromX;
-
-    if(board[toY][toX] != EMPTY) {
-        if ((diffX == -1 || diffX == 1) && diffY == dir) {
-            return true;
+Board::Board() : capturedPieceHistory(nullptr), hasMoveToUndo(false), whoseTurn(Color::WHITE), myColor(Color::WHITE) {
+    // empty
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            board[y][x] = nullptr;
         }
-        return false;
     }
 
-    if(diffY == dir && diffX == 0) return true;
-
-    if(fromY == startRow && diffY == 2 * dir && diffX == 0) {
-        int midY = fromY + dir;
-
-        if(board[midY][fromX] == EMPTY)
-            return true;
+    // pawns
+    for (int x = 0; x < 8; x++) {
+        board[1][x] = new Pawn(Color::BLACK);
     }
-    return false;
+    for (int x = 0; x < 8; x++) {
+        board[6][x] = new Pawn(Color::WHITE);
+    }
+    
+    // knights
+    board[7][1] = new Knight(Color::WHITE); // b1
+    board[7][6] = new Knight(Color::WHITE); // g1
+    board[0][1] = new Knight(Color::BLACK); // b8
+    board[0][6] = new Knight(Color::BLACK); // g8
+
+    // rooks
+    board[0][0] = new Rook(Color::BLACK); // a8
+    board[0][7] = new Rook(Color::BLACK); // h8
+    board[7][0] = new Rook(Color::WHITE); // a1
+    board[7][7] = new Rook(Color::WHITE); // h1
+
+    // bishops
+    board[0][2] = new Bishop(Color::BLACK); // c8
+    board[0][5] = new Bishop(Color::BLACK); // f8
+    board[7][2] = new Bishop(Color::WHITE); // c1
+    board[7][5] = new Bishop(Color::WHITE); // f1
+
+    // queens
+    board[0][3] = new Queen(Color::BLACK);  // d8
+    board[7][3] = new Queen(Color::WHITE);  // d1
+
+    // kings
+    board[0][4] = new King(Color::BLACK);   // e8
+    board[7][4] = new King(Color::WHITE);   // e1
+}
+
+Board::~Board() {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            delete board[y][x];
+        }
+    }
+    delete capturedPieceHistory;
+}
+
+// into enum
+const Piece (&Board::getBoard() const)[8][8] {
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            if (board[y][x] == nullptr) {
+                uiBoardCache[y][x] = EMPTY;
+            } else {
+                uiBoardCache[y][x] = board[y][x]->toEnum();
+            }
+        }
+    }
+    return uiBoardCache;
+}
+
+ChessPiece* Board::getPieceAt(int x, int y) const {
+    if (!isInsideBoard(x, y)) return nullptr;
+    return board[y][x];
+}
+
+bool Board::isInsideBoard(int x, int y) const {
+    return x >= 0 && x < 8 && y >= 0 && y < 8;
 }
 
 bool Board::isValidMove(int fromX, int fromY, int toX, int toY) {
-    if (myColor != whoseTurn) {
-        return false;
+    //out of bounds safety
+    if (whoseTurn != myColor) return false; 
+    if (!isInsideBoard(fromX, fromY) || !isInsideBoard(toX, toY)) return false;
+
+    ChessPiece* movingPiece = board[fromY][fromX];
+    if (movingPiece == nullptr || movingPiece->getColor() != whoseTurn) return false;
+
+    return movingPiece->isValidMove(fromX, fromY, toX, toY, *this);
+}
+
+bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
+    if (!isValidMove(fromX, fromY, toX, toY)) return false;
+
+    if (capturedPieceHistory) {
+        delete capturedPieceHistory;
+        capturedPieceHistory = nullptr;
     }
 
-    if(!isInsideBoard(fromX, fromY)||!isInsideBoard(toX, toY)) {
-        return false;
-    }
+    capturedPieceHistory = board[toY][toX]; 
+    lastFromX = fromX; lastFromY = fromY;
+    lastToX = toX; lastToY = toY;
+    hasMoveToUndo = true;
 
-    Piece piece = board[fromY][fromX];
+    board[toY][toX] = board[fromY][fromX];
+    board[fromY][fromX] = nullptr; 
+    
+    // alternate turn
+    whoseTurn = (whoseTurn == Color::WHITE) ? Color::BLACK : Color::WHITE;
+    return true;
+}
 
-    if (piece == EMPTY || (myColor == Color::WHITE && piece > 6) || (myColor == Color::BLACK && piece < 7)) {
-        return false;
-    }
+bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
+    if (!isInsideBoard(fromX, fromY) || !isInsideBoard(toX, toY)) return false;
+    
+    delete board[toY][toX]; 
 
-    if(piece == WHITE_PAWN || piece == BLACK_PAWN) {
-        return isValidPawnMove(fromX, fromY, toX, toY, piece);
-    }
-    return false;
+    board[toY][toX] = board[fromY][fromX];
+    board[fromY][fromX] = nullptr;
+
+    whoseTurn = myColor; // reset turn focus back to player
+    return true;
+}
+
+bool Board::undoLastMove() {
+    if (!hasMoveToUndo) return false;
+
+    board[lastFromY][lastFromX] = board[lastToY][lastToX];
+    board[lastToY][lastToX] = capturedPieceHistory; 
+
+    capturedPieceHistory = nullptr; 
+    hasMoveToUndo = false;
+    whoseTurn = (whoseTurn == Color::WHITE) ? Color::BLACK : Color::WHITE;
+    return true;
 }
 
 bool Board::parseCoordinate(std::string coord, int &x, int &y) {
     if(coord.length() != 2) return false;
-
     char column = coord[0];
     char row = coord[1];
-
     if(column < 'a' || column > 'h') return false;
-
     if(row < '1' || row > '8') return false;
-
     x = column - 'a';
     y = 8 - (row - '0');
-
     return true;
 }
 
 bool Board::makeMove(std::string from, std::string to) {
-    int fromX, fromY;
-    int toX, toY;
-
+    int fromX, fromY, toX, toY;
     if(!parseCoordinate(from, fromX, fromY)) return false;
-
     if(!parseCoordinate(to, toX, toY)) return false;
     return makeMove(fromX, fromY, toX, toY);
 }
 
-bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
-    if(!isValidMove(fromX, fromY, toX, toY)){
-        return false;
-    }
-
-    whoseTurn = myColor == Color::WHITE ? Color::BLACK : Color::WHITE;
-
-    movedPiece = board[fromY][fromX];
-    capturedPiece = board[toY][toX];
-
-    lastFromX = fromX;
-    lastFromY = fromY;
-    lastToX = toX;
-    lastToY = toY;
-    hasMoveToUndo = true;
-
-    board[toY][toX]=board[fromY][fromX];
-    board[fromY][fromX]=EMPTY;
-    return true;
-}
-
 bool Board::makeOppMove(std::string from, std::string to) {
-    int fromX, fromY;
-    int toX, toY;
-
-    whoseTurn = myColor;
-
+    int fromX, fromY, toX, toY;
     if(!parseCoordinate(from, fromX, fromY)) return false;
-
     if(!parseCoordinate(to, toX, toY)) return false;
-
     return makeOppMove(fromX, fromY, toX, toY);
 }
 
-bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
-
-    board[toY][toX]=board[fromY][fromX];
-    board[fromY][fromX]=EMPTY;
-    return true;
-}
-
-void Board::setColor(Color c) {
-    myColor = c;
-}
-
-bool Board::undoLastMove() {
-    if(!hasMoveToUndo)
-        return false;
-
-    board[lastFromY][lastFromX] = movedPiece;
-    board[lastToY][lastToX] = capturedPiece;
-
-    hasMoveToUndo = false;
-
-    return true;
-}
-
-const Piece (&Board::getBoard() const)[8][8] {
-    return board;
+void Board::setColor(Color c) { 
+    myColor = c; 
+    whoseTurn = Color::WHITE; // start with white
 }

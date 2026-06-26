@@ -21,6 +21,8 @@ enum MessageType {
     INVALID,
     WHITE,
     BLACK,
+    MATCH_ENDED,
+    DISCONNECTED,
     OTHER
 };
 
@@ -29,6 +31,10 @@ struct Event {
     std::string received_message;
     std::string from;
     std::string to;
+    char promotion = '-';
+    double white_time = 0.0;
+    double black_time = 0.0;
+    std::string reason;
 };
 
 using EventHandler = std::function<void(Event)>;
@@ -39,7 +45,8 @@ public:
   ~ChessNetwork();
 
   bool connect(const std::string& ip_address, std::uint16_t port, const EventHandler& handle);
-  bool send_move(const std::string from, const std::string to);
+  bool send_move(const std::string from, const std::string to, char promotion = '-');
+  bool resign();
   void disconnect();
 
 private:
@@ -47,6 +54,7 @@ private:
 
   void receive_loop();
   void parse_move(const std::string& message, Event& e);
+  void parse_timers(const std::string& message, Event& e);
   bool has_pending_move() const;
 
   net::io_context io_context_;

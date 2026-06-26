@@ -1,57 +1,38 @@
 #pragma once
 #include <string>
-
-enum Piece {
-    EMPTY = 0,
-
-    WHITE_PAWN = 1,
-    WHITE_ROOK = 2,
-    WHITE_KNIGHT = 3,
-    WHITE_BISHOP = 4,
-    WHITE_QUEEN = 5,
-    WHITE_KING = 6,
-
-    BLACK_PAWN = 7,
-    BLACK_ROOK = 8,
-    BLACK_KNIGHT = 9,
-    BLACK_BISHOP = 10,
-    BLACK_QUEEN = 11,
-    BLACK_KING = 12
-};
-
-enum class Color {
-    WHITE,
-    BLACK
-};
+#include "piece.h"
+#include "pawn.h"
 
 class Board {
 private:
-    Piece board[8][8];
+    ChessPiece* board[8][8]; 
+    
+    mutable Piece uiBoardCache[8][8];
+
     Color myColor;
     Color whoseTurn;
 
-    int lastFromX;
-    int lastFromY;
-    int lastToX;
-    int lastToY;
-
-    Piece movedPiece;
-    Piece capturedPiece;
-
+    int lastFromX, lastFromY, lastToX, lastToY;
+    ChessPiece* capturedPieceHistory;
     bool hasMoveToUndo;
-    bool isInsideBoard(int x, int y);
-    bool isValidPawnMove(int fromX, int fromY, int toX, int toY, Piece piece);
+
+    bool isInsideBoard(int x, int y) const;
     bool parseCoordinate(std::string coord, int &x, int &y);
 
 public:
     Board();
+    ~Board(); 
 
     bool isValidMove(int fromX, int fromY, int toX, int toY);
     bool makeMove(std::string from, std::string to);
     bool makeMove(int fromX, int fromY, int toX, int toY);
     bool makeOppMove(std::string from, std::string to);
     bool makeOppMove(int fromX, int fromY, int toX, int toY);
+    
     void setColor(Color c);
     bool undoLastMove();
-    const Piece (&getBoard() const)[8][8];
+    
+    ChessPiece* getPieceAt(int x, int y) const; 
+
+    const Piece (&getBoard() const)[8][8]; 
 };
