@@ -48,7 +48,8 @@ public:
     void draw(sf::RenderTarget& target, const Board& board) const;
 
 private:
-    float m_tileSize;
+    mutable float m_tileSize;
+    mutable sf::Vector2f m_boardOffset;
     int m_selectedX;
     int m_selectedY;
     std::vector<sf::Vector2i> m_validMoves;
@@ -68,7 +69,6 @@ private:
     bool m_isWin;
 
     mutable Button m_joinButton;
-    mutable Button m_quitButton;
     mutable Button m_resignButton;
     mutable Button m_okButton;
 
