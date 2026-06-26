@@ -6,7 +6,7 @@
 #include "queen.h"
 #include "king.h"
 
-Board::Board() : capturedPieceHistory(nullptr), hasMoveToUndo(false), whoseTurn(Color::WHITE), myColor(Color::WHITE) {
+Board::Board() : whoseTurn(Color::WHITE), myColor(Color::WHITE), enPassantX(-1), enPassantY(-1) {
     // empty
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
@@ -55,7 +55,7 @@ Board::~Board() {
             delete board[y][x];
         }
     }
-    delete capturedPieceHistory;
+    delete undo.captured;
 }
 
 // into enum
@@ -95,44 +95,132 @@ bool Board::isValidMove(int fromX, int fromY, int toX, int toY) {
 bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
     if (!isValidMove(fromX, fromY, toX, toY)) return false;
 
-    if (capturedPieceHistory) {
-        delete capturedPieceHistory;
-        capturedPieceHistory = nullptr;
+    ChessPiece* mover = board[fromY][fromX];
+
+    if (undo.captured) {
+        delete undo.captured;
+        undo.captured = nullptr;
     }
 
-    capturedPieceHistory = board[toY][toX]; 
-    lastFromX = fromX; lastFromY = fromY;
-    lastToX = toX; lastToY = toY;
-    hasMoveToUndo = true;
+    undo = Undo{};
+    undo.valid = true;
+    undo.fromX = fromX; undo.fromY = fromY;
+    undo.toX = toX; undo.toY = toY;
+    undo.moverMovedBefore = mover->hasMoved();
+    undo.enPassantXBefore = enPassantX;
+    undo.enPassantYBefore = enPassantY;
 
-    board[toY][toX] = board[fromY][fromX];
-    board[fromY][fromX] = nullptr; 
-    
-    // alternate turn
+    bool isPawn = mover->getType() == PieceType::PAWN;
+    bool isKing = mover->getType() == PieceType::KING;
+    int diffX = toX - fromX;
+
+    // En passant
+    if (isPawn && diffX != 0 && board[toY][toX] == nullptr) {
+        undo.captured = board[fromY][toX];
+        undo.capturedX = toX; undo.capturedY = fromY;
+        board[fromY][toX] = nullptr;
+    } else {
+        undo.captured = board[toY][toX];
+        undo.capturedX = toX; undo.capturedY = toY;
+    }
+
+    board[toY][toX] = mover;
+    board[fromY][fromX] = nullptr;
+    mover->setMoved(true);
+
+    // Castling
+    if (isKing && std::abs(diffX) == 2) {
+        undo.isCastle = true;
+        int rookFromX = (diffX > 0) ? 7 : 0;
+        int rookToX = (diffX > 0) ? toX - 1 : toX + 1;
+        ChessPiece* rook = board[fromY][rookFromX];
+        undo.rookFromX = rookFromX; undo.rookFromY = fromY;
+        undo.rookToX = rookToX;     undo.rookToY = fromY;
+        undo.rookMovedBefore = rook ? rook->hasMoved() : false;
+        board[fromY][rookToX] = rook;
+        board[fromY][rookFromX] = nullptr;
+        if (rook) rook->setMoved(true);
+    }
+
+    // A double pawn push opens an en passant target on the skipped square.
+    if (isPawn && std::abs(toY - fromY) == 2) {
+        enPassantX = toX;
+        enPassantY = (fromY + toY) / 2;
+    } else {
+        enPassantX = -1;
+        enPassantY = -1;
+    }
+
     whoseTurn = (whoseTurn == Color::WHITE) ? Color::BLACK : Color::WHITE;
     return true;
 }
 
 bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
     if (!isInsideBoard(fromX, fromY) || !isInsideBoard(toX, toY)) return false;
-    
-    delete board[toY][toX]; 
 
-    board[toY][toX] = board[fromY][fromX];
+    ChessPiece* mover = board[fromY][fromX];
+    if (mover == nullptr) return false;
+
+    bool isPawn = mover->getType() == PieceType::PAWN;
+    bool isKing = mover->getType() == PieceType::KING;
+    int diffX = toX - fromX;
+
+    if (isPawn && diffX != 0 && board[toY][toX] == nullptr) {
+        delete board[fromY][toX];
+        board[fromY][toX] = nullptr;
+    } else {
+        delete board[toY][toX];
+    }
+
+    board[toY][toX] = mover;
     board[fromY][fromX] = nullptr;
+    mover->setMoved(true);
 
-    whoseTurn = myColor; // reset turn focus back to player
+    if (isKing && std::abs(diffX) == 2) {
+        int rookFromX = (diffX > 0) ? 7 : 0;
+        int rookToX = (diffX > 0) ? toX - 1 : toX + 1;
+        ChessPiece* rook = board[fromY][rookFromX];
+        board[fromY][rookToX] = rook;
+        board[fromY][rookFromX] = nullptr;
+        if (rook) rook->setMoved(true);
+    }
+
+    if (isPawn && std::abs(toY - fromY) == 2) {
+        enPassantX = toX;
+        enPassantY = (fromY + toY) / 2;
+    } else {
+        enPassantX = -1;
+        enPassantY = -1;
+    }
+
+    undo.valid = false;
+    whoseTurn = myColor;
     return true;
 }
 
 bool Board::undoLastMove() {
-    if (!hasMoveToUndo) return false;
+    if (!undo.valid) return false;
 
-    board[lastFromY][lastFromX] = board[lastToY][lastToX];
-    board[lastToY][lastToX] = capturedPieceHistory; 
+    ChessPiece* mover = board[undo.toY][undo.toX];
+    board[undo.fromY][undo.fromX] = mover;
+    board[undo.toY][undo.toX] = nullptr;
+    if (mover) mover->setMoved(undo.moverMovedBefore);
 
-    capturedPieceHistory = nullptr; 
-    hasMoveToUndo = false;
+    if (undo.captured) {
+        board[undo.capturedY][undo.capturedX] = undo.captured;
+        undo.captured = nullptr;
+    }
+
+    if (undo.isCastle) {
+        ChessPiece* rook = board[undo.rookToY][undo.rookToX];
+        board[undo.rookFromY][undo.rookFromX] = rook;
+        board[undo.rookToY][undo.rookToX] = nullptr;
+        if (rook) rook->setMoved(undo.rookMovedBefore);
+    }
+
+    enPassantX = undo.enPassantXBefore;
+    enPassantY = undo.enPassantYBefore;
+    undo.valid = false;
     whoseTurn = (whoseTurn == Color::WHITE) ? Color::BLACK : Color::WHITE;
     return true;
 }
@@ -162,7 +250,9 @@ bool Board::makeOppMove(std::string from, std::string to) {
     return makeOppMove(fromX, fromY, toX, toY);
 }
 
-void Board::setColor(Color c) { 
-    myColor = c; 
+void Board::setColor(Color c) {
+    myColor = c;
     whoseTurn = Color::WHITE; // start with white
+    enPassantX = -1;
+    enPassantY = -1;
 }

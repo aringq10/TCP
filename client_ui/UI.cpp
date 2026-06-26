@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "UI.hpp"
 
 Button::Button(const sf::Font& font, const std::string& str, sf::Vector2f size) {
@@ -40,7 +41,6 @@ m_isFlipped(false), m_currentState(GameState::MainMenu), m_isWin(false), m_bgSpr
 
     if (m_hasfont) {
         m_joinButton = Button(m_font, "Join Match", { 200.f, 60.f });
-        m_quitButton = Button(m_font, "Leave Game", { 200.f, 60.f });
         m_resignButton = Button(m_font, "Resign", { 150.f, 50.f });
         m_okButton = Button(m_font, "OK", { 150.f, 50.f });
     }
@@ -92,22 +92,35 @@ void ChessBoardUI::calculateValidMoves(Board& board) {
 }
 
 sf::Vector2f ChessBoardUI::getBoardOffset(const sf::RenderTarget& target) const {
-    float boardSize = m_tileSize * 8.0f;
-    sf::Vector2f viewSize = target.getView().getSize();
-    float offsetX = std::max(0.0f, (viewSize.x - 200.f - boardSize) / 2.0f);
-    float offsetY = (viewSize.y - boardSize) / 2.0f;
-
-    if (m_currentState == GameState::MainMenu) {
-        offsetX = (viewSize.x - boardSize) / 2.0f; 
-    }
-    return { offsetX, offsetY };
+    (void)target;
+    return m_boardOffset;
 }
 
 void ChessBoardUI::updateLayout(sf::Vector2f viewSize) const {
-    m_joinButton.setCenterPosition({ viewSize.x / 2.f, viewSize.y / 2.f - 40.f });
-    m_quitButton.setCenterPosition({ viewSize.x / 2.f, viewSize.y / 2.f + 40.f });
+    const float buttonHeight = 50.f;
+    const float gap = 10.f;
+    const float maxBoard = 500.f;
+
+    // Board fills the window but never grows past maxBoard, and always leaves
+    // room above it for the resign button.
+    float boardSize = std::min({ viewSize.x, viewSize.y - buttonHeight - gap, maxBoard });
+    if (boardSize < 0.f) boardSize = 0.f;
+
+    m_tileSize = boardSize / 8.0f;
+
+    float totalHeight = boardSize + gap + buttonHeight;
+    float startX = (viewSize.x - boardSize) / 2.0f;
+    float startY = (viewSize.y - totalHeight) / 2.0f;
+
+    m_boardOffset = { startX, startY + buttonHeight + gap };
+
+    // Resign button sits directly above the board, matching its width.
+    m_resignButton.rect.setSize({ boardSize, buttonHeight });
+    m_resignButton.setCenterPosition({ startX + boardSize / 2.0f, startY + buttonHeight / 2.0f });
+
+    // Menu buttons stay centered.
+    m_joinButton.setCenterPosition({ viewSize.x / 2.f, viewSize.y / 2.f });
     m_okButton.setCenterPosition({ viewSize.x / 2.f, viewSize.y / 2.f + 80.f });
-    m_resignButton.setCenterPosition({ viewSize.x - 120.f, viewSize.y / 2.f });
 }
 
 UIAction ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindow& window, Board& board, ChessNetwork& network) {
@@ -122,7 +135,6 @@ UIAction ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindo
                     m_currentState = GameState::Playing;
                     return UIAction::JoinMatch;
                 }
-                if (m_quitButton.isClicked(worldPos)) return UIAction::CloseWindow;
             }
             else if (m_currentState == GameState::GameOver) {
                 if (m_okButton.isClicked(worldPos)) {
@@ -135,6 +147,7 @@ UIAction ChessBoardUI::handleEvent(const sf::Event& event, const sf::RenderWindo
             }
             else if (m_currentState == GameState::Playing) {
                 if (m_resignButton.isClicked(worldPos)) {
+                    network.resign();
                     m_currentState = GameState::GameOver;
                     m_isWin = false;
                     return UIAction::Resign;
@@ -210,7 +223,6 @@ void ChessBoardUI::drawMainMenu(sf::RenderTarget& target) const {
         target.draw(title);
     }
     m_joinButton.draw(target);
-    m_quitButton.draw(target);
 }
 
 void ChessBoardUI::drawGameOver(sf::RenderTarget& target) const {
@@ -345,8 +357,15 @@ void ChessBoardUI::draw(sf::RenderTarget& target, const Board& board) const {
     if (m_hasBackground) {
         sf::Vector2f targetSize = target.getView().getSize();
         sf::Vector2f textureSize(m_bgTexture.getSize());
-        const_cast<sf::Sprite&>(m_bgSprite).setScale({ targetSize.x / textureSize.x, targetSize.y / textureSize.y });
-        target.draw(m_bgSprite);
+
+        // Cover: uniform scale to fill the window, keeping aspect ratio and
+        // cropping the overflow (centered).
+        float scale = std::max(targetSize.x / textureSize.x, targetSize.y / textureSize.y);
+        sf::Sprite& bg = const_cast<sf::Sprite&>(m_bgSprite);
+        bg.setScale({ scale, scale });
+        bg.setOrigin({ textureSize.x / 2.f, textureSize.y / 2.f });
+        bg.setPosition({ targetSize.x / 2.f, targetSize.y / 2.f });
+        target.draw(bg);
     }
 
     if (m_currentState == GameState::MainMenu) {

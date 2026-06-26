@@ -32,7 +32,11 @@ bool Pawn::isValidMove(int fromX, int fromY, int toX, int toY, const Board& boar
 
     // Diagonal capture
     if (std::abs(diffX) == 1 && diffY == direction) {
+        // Normal capture
         if (target != nullptr && target->getColor() != this->color) {
+            return true;
+        }
+        if (target == nullptr && toX == board.getEnPassantTargetX() && toY == board.getEnPassantTargetY()) {
             return true;
         }
     }

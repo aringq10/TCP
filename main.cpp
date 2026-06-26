@@ -14,14 +14,15 @@ int main(int argc, char** argv) {
     std::string address = argv[1];
 
     const float tileSize = 80.0f;
-    const unsigned int windowSize = static_cast<unsigned int>(tileSize * 8);
 
-    sf::RenderWindow window(sf::VideoMode({ windowSize, windowSize }), "TCP");
+    sf::RenderWindow window(sf::VideoMode({ 600, 600 }), "TCP");
     window.setFramerateLimit(60);
 
     Board board;
     ChessNetwork network;
     ChessBoardUI ui(tileSize);
+
+    Color myColor = Color::WHITE;
 
     auto handle_event = [&](Event e) {
         switch (e.type) {
@@ -45,18 +46,24 @@ int main(int argc, char** argv) {
 
         case WHITE:
             std::cout << "You are playing as WHITE" << std::endl;
+            myColor = Color::WHITE;
             board.setColor(Color::WHITE);
             break;
 
         case BLACK:
             std::cout << "You are playing as BLACK" << std::endl;
+            myColor = Color::BLACK;
             board.setColor(Color::BLACK);
             ui.setFlipped(true);
             break;
 
-        case MATCH_ENDED:
+        case MATCH_ENDED: {
             std::cout << "Match has ended: " << e.reason << std::endl;
+            bool isWin = (myColor == Color::WHITE && e.reason.rfind("1-0", 0) == 0) ||
+                         (myColor == Color::BLACK && e.reason.rfind("0-1", 0) == 0);
+            ui.setGameOver(isWin);
             break;
+        }
 
         case DISCONNECTED:
             std::cout << "Connection to server closed" << std::endl;
@@ -68,11 +75,6 @@ int main(int argc, char** argv) {
         }
         };
 
-    if (!network.connect(address, 6767, handle_event)) {
-        std::cout << "Could not connect to server" << std::endl;
-        return 1;
-    }
-
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
@@ -82,7 +84,17 @@ int main(int argc, char** argv) {
                 sf::FloatRect visibleArea({ 0.f,0.f }, { static_cast<float>(resized->size.x),static_cast<float>(resized->size.y) });
                 window.setView(sf::View(visibleArea));
             }
-            ui.handleEvent(*event, window, board, network);
+            UIAction action = ui.handleEvent(*event, window, board, network);
+
+            if (action == UIAction::JoinMatch) {
+                if (!network.connect(address, 6767, handle_event)) {
+                    std::cout << "Could not connect to server" << std::endl;
+                    ui.setGameState(GameState::MainMenu);
+                }
+            }
+            else if (action == UIAction::CloseWindow) {
+                window.close();
+            }
         }
 
         window.clear();
