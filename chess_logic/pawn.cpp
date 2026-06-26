@@ -36,8 +36,6 @@ bool Pawn::isValidMove(int fromX, int fromY, int toX, int toY, const Board& boar
         if (target != nullptr && target->getColor() != this->color) {
             return true;
         }
-        // En passant: the destination is empty but matches the en passant
-        // target square left by the opponent's last double pawn push.
         if (target == nullptr && toX == board.getEnPassantTargetX() && toY == board.getEnPassantTargetY()) {
             return true;
         }

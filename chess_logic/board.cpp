@@ -97,7 +97,6 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
 
     ChessPiece* mover = board[fromY][fromX];
 
-    // The previous move is now permanent; free the piece it captured.
     if (undo.captured) {
         delete undo.captured;
         undo.captured = nullptr;
@@ -115,8 +114,7 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
     bool isKing = mover->getType() == PieceType::KING;
     int diffX = toX - fromX;
 
-    // En passant: a diagonal pawn move onto an empty square captures the
-    // pawn that sits beside the mover, not the one on the destination square.
+    // En passant
     if (isPawn && diffX != 0 && board[toY][toX] == nullptr) {
         undo.captured = board[fromY][toX];
         undo.capturedX = toX; undo.capturedY = fromY;
@@ -130,7 +128,7 @@ bool Board::makeMove(int fromX, int fromY, int toX, int toY) {
     board[fromY][fromX] = nullptr;
     mover->setMoved(true);
 
-    // Castling: slide the rook to the far side of the king.
+    // Castling
     if (isKing && std::abs(diffX) == 2) {
         undo.isCastle = true;
         int rookFromX = (diffX > 0) ? 7 : 0;
@@ -163,8 +161,6 @@ bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
     ChessPiece* mover = board[fromY][fromX];
     if (mover == nullptr) return false;
 
-    // Opponent moves come from the authoritative server; apply them verbatim,
-    // including the same en passant / castling side effects as local moves.
     bool isPawn = mover->getType() == PieceType::PAWN;
     bool isKing = mover->getType() == PieceType::KING;
     int diffX = toX - fromX;
@@ -197,9 +193,8 @@ bool Board::makeOppMove(int fromX, int fromY, int toX, int toY) {
         enPassantY = -1;
     }
 
-    // The opponent's move supersedes any pending local move to undo.
     undo.valid = false;
-    whoseTurn = myColor; // reset turn focus back to player
+    whoseTurn = myColor;
     return true;
 }
 
@@ -211,13 +206,11 @@ bool Board::undoLastMove() {
     board[undo.toY][undo.toX] = nullptr;
     if (mover) mover->setMoved(undo.moverMovedBefore);
 
-    // Restore the captured piece on its own square (handles en passant).
     if (undo.captured) {
         board[undo.capturedY][undo.capturedX] = undo.captured;
         undo.captured = nullptr;
     }
 
-    // Put the rook back if this was a castle.
     if (undo.isCastle) {
         ChessPiece* rook = board[undo.rookToY][undo.rookToX];
         board[undo.rookFromY][undo.rookFromX] = rook;

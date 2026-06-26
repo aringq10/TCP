@@ -7,9 +7,6 @@ bool King::isValidMove(int fromX, int fromY, int toX, int toY, const Board& boar
     int diffX = std::abs(dX);
     int diffY = std::abs(toY - fromY);
 
-    // Castling: the king steps two squares sideways along its own rank.
-    // Legality wrt. check / passing through attacked squares is enforced by
-    // the authoritative server; here we only verify the geometric conditions.
     if (diffY == 0 && diffX == 2) {
         if (this->hasMoved()) return false;
 
@@ -29,7 +26,6 @@ bool King::isValidMove(int fromX, int fromY, int toX, int toY, const Board& boar
         return true;
     }
 
-    // King moves exactly one square in any direction
     if (diffX > 1 || diffY > 1 || (diffX == 0 && diffY == 0)) return false;
 
     ChessPiece* target = board.getPieceAt(toX, toY);
